@@ -29,7 +29,7 @@
 <!-- ================= CONNEXION ================= -->
 <div id="vue-login" class="min-h-screen flex items-center justify-center p-6 bg-white">
   <div class="w-full max-w-sm">
-    <img src="1000299906.png" alt="NovaSoft, un service de NOVATEC" width="900" height="450" class="block w-full h-auto mx-auto -my-6" onerror="this.style.display='none';document.getElementById('logo-texte').classList.remove('hidden')">
+    <img data-logo alt="NovaSoft, un service de NOVATEC" width="900" height="450" class="block w-full h-auto mx-auto -my-6" onerror="this.style.display='none';document.getElementById('logo-texte').classList.remove('hidden')">
     <h1 id="logo-texte" class="hidden text-3xl font-extrabold tracking-wide text-center"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></h1>
     <p class="text-center mt-1"><span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">Version 1.0</span></p>
 
@@ -53,8 +53,8 @@
   <header class="bg-white border-b border-slate-200">
     <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
       <div class="flex items-center gap-2 shrink-0">
-        <div class="relative h-7 w-[140px] overflow-hidden">
-          <img src="1000299906.png" alt="NovaSoft" class="absolute max-w-none" style="width:147px;left:-4.8px;top:-15.8px" onerror="this.parentNode.classList.add('hidden');document.getElementById('logo-texte-h').classList.remove('hidden')">
+        <div class="relative h-[29px] w-[150px] overflow-hidden">
+          <img data-logo alt="NovaSoft" class="absolute max-w-none" style="width:159px;left:-5.6px;top:-17.5px" onerror="this.parentNode.classList.add('hidden');document.getElementById('logo-texte-h').classList.remove('hidden')">
         </div>
         <span id="logo-texte-h" class="hidden text-xl font-extrabold tracking-wide"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></span>
         <span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">1.0</span>
@@ -163,6 +163,10 @@
 const SUPABASE_URL = 'https://tnsvcvbrybzelfxxhttn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_R2Jh5Ta4PT2K-3z0MlLtCg_AdXHtXvh';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ---------- Logo : nom du fichier présent dans le dépôt GitHub ---------- */
+const LOGO = 'file_00000000bf78820e9224a8e64b5b79d3.png';
+document.querySelectorAll('img[data-logo]').forEach((img) => { img.src = LOGO; });
 
 /* ---------- Outils ---------- */
 const $ = (id) => document.getElementById(id);
