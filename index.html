@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NovaSoft 1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  tailwind.config = { theme: { extend: { colors: {
+    ocean: '#0052CC',
+    lumina: { DEFAULT: '#10B981', dark: '#059669' }
+  } } } };
+</script>
+<style type="text/tailwindcss">
+  @layer components {
+    .champ { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 focus:border-ocean; }
+    .btn { @apply rounded-xl bg-ocean px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50; }
+    .btn-clair { @apply rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50; }
+    .etiq { @apply block text-sm font-medium text-slate-600 mb-1; }
+    .carte { @apply bg-white border border-slate-200 rounded-2xl p-5; }
+  }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+
+<!-- ================= CONNEXION ================= -->
+<div id="vue-login" class="min-h-screen flex items-center justify-center p-6 bg-white">
+  <div class="w-full max-w-sm">
+    <img src="1000299906.png" alt="NovaSoft, un service de NOVATEC" width="900" height="450" class="block w-full h-auto mx-auto -my-6" onerror="this.style.display='none';document.getElementById('logo-texte').classList.remove('hidden')">
+    <h1 id="logo-texte" class="hidden text-3xl font-extrabold tracking-wide text-center"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></h1>
+    <p class="text-center mt-1"><span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">Version 1.0</span></p>
+
+    <form id="form-login" class="carte mt-8 space-y-4">
+      <div>
+        <label class="etiq" for="login-email">Adresse email</label>
+        <input id="login-email" type="email" autocomplete="email" required class="champ">
+      </div>
+      <div>
+        <label class="etiq" for="login-mdp">Mot de passe</label>
+        <input id="login-mdp" type="password" autocomplete="current-password" required class="champ">
+      </div>
+      <button id="btn-login" class="btn w-full" type="submit">Se connecter</button>
+      <p id="msg-login" class="text-sm hidden"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ================= APPLICATION ================= -->
+<div id="vue-app" class="hidden">
+  <header class="bg-white border-b border-slate-200">
+    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="relative h-7 w-[140px] overflow-hidden">
+          <img src="1000299906.png" alt="NovaSoft" class="absolute max-w-none" style="width:147px;left:-4.8px;top:-15.8px" onerror="this.parentNode.classList.add('hidden');document.getElementById('logo-texte-h').classList.remove('hidden')">
+        </div>
+        <span id="logo-texte-h" class="hidden text-xl font-extrabold tracking-wide"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></span>
+        <span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">1.0</span>
+      </div>
+      <div class="text-right min-w-0">
+        <p id="who" class="text-sm font-semibold truncate"></p>
+        <p id="role" class="text-xs text-slate-500"></p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 py-6 space-y-6">
+
+    <section id="sec-dossier" class="carte">
+      <h2 class="font-bold text-lg">Mon dossier</h2>
+      <p id="dossier-info" class="text-sm text-slate-600 mt-2"></p>
+    </section>
+
+    <section id="sec-conge" class="carte hidden">
+      <h2 class="font-bold text-lg">Demander un congé</h2>
+      <form id="form-conge" class="mt-4 space-y-4">
+        <div>
+          <label class="etiq" for="c-type">Type de congé</label>
+          <select id="c-type" class="champ">
+            <option value="annuel">Congé annuel</option>
+            <option value="maladie">Maladie</option>
+            <option value="maternite_paternite">Maternité / paternité</option>
+            <option value="sans_solde">Sans solde</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="etiq" for="c-debut">Du</label>
+            <input id="c-debut" type="date" required class="champ">
+          </div>
+          <div>
+            <label class="etiq" for="c-fin">Au</label>
+            <input id="c-fin" type="date" required class="champ">
+          </div>
+        </div>
+        <div>
+          <label class="etiq" for="c-motif">Motif (facultatif)</label>
+          <textarea id="c-motif" rows="2" class="champ"></textarea>
+        </div>
+        <button class="btn w-full" type="submit">Envoyer la demande</button>
+        <p id="msg-conge" class="text-sm hidden"></p>
+      </form>
+    </section>
+
+    <section id="sec-mes" class="carte hidden">
+      <h2 class="font-bold text-lg">Mes demandes</h2>
+      <div id="liste-mes" class="mt-3 divide-y divide-slate-100"></div>
+    </section>
+
+    <!-- Espace administrateur -->
+    <section id="sec-traiter" class="carte hidden">
+      <h2 class="font-bold text-lg">Demandes à traiter</h2>
+      <div id="liste-traiter" class="mt-3 divide-y divide-slate-100"></div>
+      <p id="msg-traiter" class="text-sm hidden mt-3"></p>
+    </section>
+
+    <section id="sec-employe" class="carte hidden">
+      <h2 class="font-bold text-lg">Ajouter un employé</h2>
+      <p class="text-sm text-slate-500 mt-1">L'email relie le dossier à un compte existant. Il est facultatif.</p>
+      <form id="form-employe" class="mt-4 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="etiq" for="e-prenom">Prénom</label>
+            <input id="e-prenom" required class="champ">
+          </div>
+          <div>
+            <label class="etiq" for="e-nom">Nom</label>
+            <input id="e-nom" required class="champ">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="etiq" for="e-matricule">Matricule</label>
+            <input id="e-matricule" required class="champ">
+          </div>
+          <div>
+            <label class="etiq" for="e-poste">Poste</label>
+            <input id="e-poste" class="champ">
+          </div>
+        </div>
+        <div>
+          <label class="etiq" for="e-dep">Département</label>
+          <input id="e-dep" class="champ">
+        </div>
+        <div>
+          <label class="etiq" for="e-email">Email du compte (facultatif)</label>
+          <input id="e-email" type="email" class="champ">
+        </div>
+        <button class="btn w-full" type="submit">Enregistrer l'employé</button>
+        <p id="msg-employe" class="text-sm hidden"></p>
+      </form>
+    </section>
+
+    <button id="btn-logout" class="btn-clair w-full" type="button">Se déconnecter</button>
+  </main>
+</div>
+
+<script>
+/* ---------- Configuration Supabase (clé publique uniquement) ---------- */
+const SUPABASE_URL = 'https://tnsvcvbrybzelfxxhttn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_R2Jh5Ta4PT2K-3z0MlLtCg_AdXHtXvh';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ---------- Outils ---------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('fr-FR');
+const nbJours = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000) + 1;
+
+const TYPES = { annuel: 'Congé annuel', maladie: 'Maladie', maternite_paternite: 'Maternité / paternité', sans_solde: 'Sans solde', autre: 'Autre' };
+const STATUTS = {
+  en_attente: ['En attente', 'bg-amber-50 text-amber-700'],
+  approuve: ['Approuvé', 'bg-emerald-50 text-emerald-700'],
+  refuse: ['Refusé', 'bg-rose-50 text-rose-700'],
+  annule: ['Annulé', 'bg-slate-100 text-slate-600']
+};
+const ROLES = { admin: 'Administrateur', comptable: 'Comptable', employe: 'Employé' };
+
+function msg(id, texte, ok) {
+  const el = $(id);
+  el.textContent = texte;
+  el.className = 'text-sm ' + (ok ? 'text-emerald-700' : 'text-rose-600');
+}
+function clearMsg(id) { $(id).className = 'text-sm hidden'; }
+function show(id, visible) { $(id).classList.toggle('hidden', !visible); }
+
+let me = null;   // utilisateur connecté
+let emp = null;  // son dossier employé
+
+/* ---------- Connexion ---------- */
+function showLogin() {
+  show('vue-app', false);
+  show('vue-login', true);
+}
+
+$('form-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMsg('msg-login');
+  const btn = $('btn-login');
+  btn.disabled = true;
+  try {
+    const { error } = await db.auth.signInWithPassword({
+      email: $('login-email').value.trim(),
+      password: $('login-mdp').value
+    });
+    if (error) { msg('msg-login', 'Email ou mot de passe incorrect.', false); return; }
+    await loadApp();
+  } catch (err) {
+    msg('msg-login', 'Connexion à Supabase impossible. Vérifie l\'adresse du projet dans le fichier.', false);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$('btn-logout').addEventListener('click', async () => {
+  await db.auth.signOut();
+  me = null; emp = null;
+  showLogin();
+});
+
+/* ---------- Chargement de l'application ---------- */
+async function loadApp() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) { showLogin(); return; }
+
+  const { data, error } = await db.from('utilisateurs').select('id,nom,email,role').eq('id', user.id).maybeSingle();
+  if (error || !data) {
+    await db.auth.signOut();
+    showLogin();
+    msg('msg-login', 'Ce compte n\'est pas encore enregistré dans NovaSoft.', false);
+    return;
+  }
+  me = data;
+  $('who').textContent = me.nom;
+  $('role').textContent = ROLES[me.role] || me.role;
+
+  const r = await db.from('employes').select('*').eq('utilisateur_id', me.id).maybeSingle();
+  emp = r.data || null;
+
+  renderDossier();
+  const estAdmin = me.role === 'admin';
+  show('sec-conge', !!emp);
+  show('sec-mes', !!emp);
+  show('sec-traiter', estAdmin);
+  show('sec-employe', estAdmin);
+
+  if (emp) await loadMesConges();
+  if (estAdmin) await loadATraiter();
+
+  show('vue-login', false);
+  show('vue-app', true);
+}
+
+function renderDossier() {
+  const info = $('dossier-info');
+  if (emp) {
+    const ligne = [emp.poste, emp.departement].filter(Boolean).join(', ');
+    info.innerHTML = '<span class="font-semibold">' + esc(emp.prenom + ' ' + emp.nom) + '</span>'
+      + (ligne ? ' · ' + esc(ligne) : '')
+      + '<br>Matricule ' + esc(emp.matricule)
+      + ' · ' + esc(emp.jours_conges_annuels) + ' jours de congés par an';
+  } else if (me.role === 'admin') {
+    info.textContent = 'Tu n\'as pas encore de dossier employé. Ajoute-le plus bas avec ton propre email pour pouvoir demander un congé.';
+  } else {
+    info.textContent = 'Ton dossier employé n\'est pas encore créé. Demande à un administrateur de l\'ajouter.';
+  }
+}
+
+/* ---------- Mes congés ---------- */
+async function loadMesConges() {
+  const { data, error } = await db.from('conges')
+    .select('id,type,date_debut,date_fin,motif,statut')
+    .eq('employe_id', emp.id)
+    .order('created_at', { ascending: false });
+  const box = $('liste-mes');
+  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">Impossible de charger tes demandes.</p>'; return; }
+  if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune demande pour l\'instant.</p>'; return; }
+  box.innerHTML = data.map((c) => {
+    const [lib, cls] = STATUTS[c.statut] || [c.statut, 'bg-slate-100 text-slate-600'];
+    return '<div class="py-3 flex items-start justify-between gap-3">'
+      + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(TYPES[c.type] || c.type) + '</p>'
+      + '<p class="text-sm text-slate-600">Du ' + fmtDate(c.date_debut) + ' au ' + fmtDate(c.date_fin) + ' (' + nbJours(c.date_debut, c.date_fin) + ' j)</p>'
+      + (c.motif ? '<p class="text-xs text-slate-500 mt-0.5">' + esc(c.motif) + '</p>' : '')
+      + '</div><span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ' + cls + '">' + lib + '</span></div>';
+  }).join('');
+}
+
+$('form-conge').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMsg('msg-conge');
+  const debut = $('c-debut').value;
+  const fin = $('c-fin').value;
+  if (fin < debut) { msg('msg-conge', 'La date de fin doit être après la date de début.', false); return; }
+  const { error } = await db.from('conges').insert({
+    employe_id: emp.id,
+    type: $('c-type').value,
+    date_debut: debut,
+    date_fin: fin,
+    motif: $('c-motif').value.trim() || null
+  });
+  if (error) { msg('msg-conge', 'La demande n\'a pas pu être envoyée : ' + error.message, false); return; }
+  msg('msg-conge', 'Demande envoyée. Elle est en attente de validation.', true);
+  $('form-conge').reset();
+  await loadMesConges();
+  if (me.role === 'admin') await loadATraiter();
+});
+
+/* ---------- Espace administrateur ---------- */
+async function loadATraiter() {
+  const { data, error } = await db.from('conges')
+    .select('id,type,date_debut,date_fin,motif,employes(nom,prenom)')
+    .eq('statut', 'en_attente')
+    .order('created_at', { ascending: true });
+  const box = $('liste-traiter');
+  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">Impossible de charger les demandes.</p>'; return; }
+  if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune demande en attente.</p>'; return; }
+  box.innerHTML = data.map((c) => {
+    const nom = c.employes ? c.employes.prenom + ' ' + c.employes.nom : 'Employé inconnu';
+    return '<div class="py-3">'
+      + '<p class="text-sm font-semibold">' + esc(nom) + ' · ' + esc(TYPES[c.type] || c.type) + '</p>'
+      + '<p class="text-sm text-slate-600">Du ' + fmtDate(c.date_debut) + ' au ' + fmtDate(c.date_fin) + ' (' + nbJours(c.date_debut, c.date_fin) + ' j)</p>'
+      + (c.motif ? '<p class="text-xs text-slate-500 mt-0.5">' + esc(c.motif) + '</p>' : '')
+      + '<div class="mt-2 flex gap-2">'
+      + '<button class="btn !py-1.5 !bg-lumina-dark hover:!bg-emerald-700" data-id="' + esc(c.id) + '" data-statut="approuve">Approuver</button>'
+      + '<button class="btn-clair !py-1.5" data-id="' + esc(c.id) + '" data-statut="refuse">Refuser</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+$('liste-traiter').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-id]');
+  if (!btn) return;
+  btn.disabled = true;
+  clearMsg('msg-traiter');
+  const { error } = await db.from('conges').update({
+    statut: btn.dataset.statut,
+    traite_par: me.id,
+    traite_le: new Date().toISOString()
+  }).eq('id', btn.dataset.id);
+  if (error) { msg('msg-traiter', 'Action impossible : ' + error.message, false); btn.disabled = false; return; }
+  await loadATraiter();
+  if (emp) await loadMesConges();
+});
+
+$('form-employe').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMsg('msg-employe');
+  let utilisateurId = null;
+  const email = $('e-email').value.trim();
+  if (email) {
+    const { data } = await db.from('utilisateurs').select('id').eq('email', email).maybeSingle();
+    if (!data) { msg('msg-employe', 'Aucun compte avec cet email. Crée d\'abord le compte dans Supabase (Authentication).', false); return; }
+    utilisateurId = data.id;
+  }
+  const { error } = await db.from('employes').insert({
+    utilisateur_id: utilisateurId,
+    matricule: $('e-matricule').value.trim(),
+    prenom: $('e-prenom').value.trim(),
+    nom: $('e-nom').value.trim(),
+    poste: $('e-poste').value.trim() || null,
+    departement: $('e-dep').value.trim() || null
+  });
+  if (error) {
+    const doublon = error.message.includes('duplicate');
+    msg('msg-employe', doublon ? 'Ce matricule ou ce compte a déjà un dossier.' : 'Enregistrement impossible : ' + error.message, false);
+    return;
+  }
+  msg('msg-employe', 'Employé enregistré.', true);
+  $('form-employe').reset();
+  if (utilisateurId === me.id) await loadApp();
+});
+
+/* ---------- Démarrage ---------- */
+(async () => {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) await loadApp(); else showLogin();
+  } catch (err) {
+    showLogin();
+  }
+})();
+</script>
+</body>
+</html>
