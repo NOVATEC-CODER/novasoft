@@ -66,93 +66,195 @@
     </div>
   </header>
 
+  <nav id="onglets" class="hidden max-w-2xl mx-auto px-4 pt-4 flex gap-2">
+    <button id="tab-rh" type="button">Ressources humaines</button>
+    <button id="tab-fin" type="button">Finances</button>
+  </nav>
+
   <main class="max-w-2xl mx-auto px-4 py-6 space-y-6">
 
-    <section id="sec-dossier" class="carte">
-      <h2 class="font-bold text-lg">Mon dossier</h2>
-      <p id="dossier-info" class="text-sm text-slate-600 mt-2"></p>
-    </section>
+    <!-- ========== Onglet RH ========== -->
+    <div id="onglet-rh" class="space-y-6">
 
-    <section id="sec-conge" class="carte hidden">
-      <h2 class="font-bold text-lg">Demander un congé</h2>
-      <form id="form-conge" class="mt-4 space-y-4">
-        <div>
-          <label class="etiq" for="c-type">Type de congé</label>
-          <select id="c-type" class="champ">
-            <option value="annuel">Congé annuel</option>
-            <option value="maladie">Maladie</option>
-            <option value="maternite_paternite">Maternité / paternité</option>
-            <option value="sans_solde">Sans solde</option>
-            <option value="autre">Autre</option>
-          </select>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="c-debut">Du</label>
-            <input id="c-debut" type="date" required class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="c-fin">Au</label>
-            <input id="c-fin" type="date" required class="champ">
-          </div>
-        </div>
-        <div>
-          <label class="etiq" for="c-motif">Motif (facultatif)</label>
-          <textarea id="c-motif" rows="2" class="champ"></textarea>
-        </div>
-        <button class="btn w-full" type="submit">Envoyer la demande</button>
-        <p id="msg-conge" class="text-sm hidden"></p>
-      </form>
-    </section>
+      <section id="sec-dossier" class="carte">
+        <h2 class="font-bold text-lg">Mon dossier</h2>
+        <p id="dossier-info" class="text-sm text-slate-600 mt-2"></p>
+      </section>
 
-    <section id="sec-mes" class="carte hidden">
-      <h2 class="font-bold text-lg">Mes demandes</h2>
-      <div id="liste-mes" class="mt-3 divide-y divide-slate-100"></div>
-    </section>
+      <section id="sec-conge" class="carte hidden">
+        <h2 class="font-bold text-lg">Demander un congé</h2>
+        <form id="form-conge" class="mt-4 space-y-4">
+          <div>
+            <label class="etiq" for="c-type">Type de congé</label>
+            <select id="c-type" class="champ">
+              <option value="annuel">Congé annuel</option>
+              <option value="maladie">Maladie</option>
+              <option value="maternite_paternite">Maternité / paternité</option>
+              <option value="sans_solde">Sans solde</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="etiq" for="c-debut">Du</label>
+              <input id="c-debut" type="date" required class="champ">
+            </div>
+            <div>
+              <label class="etiq" for="c-fin">Au</label>
+              <input id="c-fin" type="date" required class="champ">
+            </div>
+          </div>
+          <div>
+            <label class="etiq" for="c-motif">Motif (facultatif)</label>
+            <textarea id="c-motif" rows="2" class="champ"></textarea>
+          </div>
+          <button class="btn w-full" type="submit">Envoyer la demande</button>
+          <p id="msg-conge" class="text-sm hidden"></p>
+        </form>
+      </section>
 
-    <!-- Espace administrateur -->
-    <section id="sec-traiter" class="carte hidden">
-      <h2 class="font-bold text-lg">Demandes à traiter</h2>
-      <div id="liste-traiter" class="mt-3 divide-y divide-slate-100"></div>
-      <p id="msg-traiter" class="text-sm hidden mt-3"></p>
-    </section>
+      <section id="sec-mes" class="carte hidden">
+        <h2 class="font-bold text-lg">Mes demandes</h2>
+        <div id="liste-mes" class="mt-3 divide-y divide-slate-100"></div>
+      </section>
 
-    <section id="sec-employe" class="carte hidden">
-      <h2 class="font-bold text-lg">Ajouter un employé</h2>
-      <p class="text-sm text-slate-500 mt-1">L'email relie le dossier à un compte existant. Il est facultatif.</p>
-      <form id="form-employe" class="mt-4 space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="e-prenom">Prénom</label>
-            <input id="e-prenom" required class="champ">
+      <section id="sec-traiter" class="carte hidden">
+        <h2 class="font-bold text-lg">Demandes à traiter</h2>
+        <div id="liste-traiter" class="mt-3 divide-y divide-slate-100"></div>
+        <p id="msg-traiter" class="text-sm hidden mt-3"></p>
+      </section>
+
+      <section id="sec-employe" class="carte hidden">
+        <h2 class="font-bold text-lg">Ajouter un employé</h2>
+        <p class="text-sm text-slate-500 mt-1">Pour créer aussi son compte, saisis son email et un mot de passe provisoire. Si le compte existe déjà, laisse le mot de passe vide.</p>
+        <form id="form-employe" class="mt-4 space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="etiq" for="e-prenom">Prénom</label>
+              <input id="e-prenom" required class="champ">
+            </div>
+            <div>
+              <label class="etiq" for="e-nom">Nom</label>
+              <input id="e-nom" required class="champ">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="etiq" for="e-matricule">Matricule</label>
+              <input id="e-matricule" required class="champ">
+            </div>
+            <div>
+              <label class="etiq" for="e-poste">Poste</label>
+              <input id="e-poste" class="champ">
+            </div>
           </div>
           <div>
-            <label class="etiq" for="e-nom">Nom</label>
-            <input id="e-nom" required class="champ">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="e-matricule">Matricule</label>
-            <input id="e-matricule" required class="champ">
+            <label class="etiq" for="e-dep">Département</label>
+            <input id="e-dep" class="champ">
           </div>
           <div>
-            <label class="etiq" for="e-poste">Poste</label>
-            <input id="e-poste" class="champ">
+            <label class="etiq" for="e-email">Email du compte (facultatif)</label>
+            <input id="e-email" type="email" class="champ">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="etiq" for="e-mdp">Mot de passe provisoire</label>
+              <input id="e-mdp" type="password" autocomplete="new-password" class="champ">
+            </div>
+            <div>
+              <label class="etiq" for="e-role">Rôle</label>
+              <select id="e-role" class="champ">
+                <option value="employe">Employé</option>
+                <option value="comptable">Comptable</option>
+                <option value="admin">Administrateur</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn w-full" type="submit">Enregistrer l'employé</button>
+          <p id="msg-employe" class="text-sm hidden"></p>
+        </form>
+      </section>
+    </div>
+
+    <!-- ========== Onglet Finances ========== -->
+    <div id="onglet-fin" class="hidden space-y-6">
+
+      <section class="carte">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="font-bold text-lg">Tableau de bord</h2>
+          <input id="f-mois" type="month" class="champ !w-auto !py-1.5">
+        </div>
+        <div class="grid grid-cols-1 gap-3 mt-4">
+          <div class="rounded-xl bg-emerald-50 p-4">
+            <p class="text-sm text-emerald-700">Recettes du mois</p>
+            <p id="k-rec" class="text-2xl font-extrabold text-lumina-dark mt-1">0 FCFA</p>
+          </div>
+          <div class="rounded-xl bg-rose-50 p-4">
+            <p class="text-sm text-rose-700">Dépenses du mois</p>
+            <p id="k-dep" class="text-2xl font-extrabold text-rose-600 mt-1">0 FCFA</p>
+          </div>
+          <div class="rounded-xl bg-blue-50 p-4">
+            <p class="text-sm text-blue-800">Solde du mois</p>
+            <p id="k-solde" class="text-2xl font-extrabold text-ocean mt-1">0 FCFA</p>
           </div>
         </div>
-        <div>
-          <label class="etiq" for="e-dep">Département</label>
-          <input id="e-dep" class="champ">
-        </div>
-        <div>
-          <label class="etiq" for="e-email">Email du compte (facultatif)</label>
-          <input id="e-email" type="email" class="champ">
-        </div>
-        <button class="btn w-full" type="submit">Enregistrer l'employé</button>
-        <p id="msg-employe" class="text-sm hidden"></p>
-      </form>
-    </section>
+        <p class="text-sm text-slate-500 mt-4">Trésorerie totale : <span id="k-total" class="font-semibold text-slate-700">0 FCFA</span></p>
+      </section>
+
+      <section class="carte">
+        <h2 class="font-bold text-lg">Enregistrer une opération</h2>
+        <form id="form-fin" class="mt-4 space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="etiq" for="f-type">Type</label>
+              <select id="f-type" class="champ">
+                <option value="recette">Recette</option>
+                <option value="depense">Dépense</option>
+              </select>
+            </div>
+            <div>
+              <label class="etiq" for="f-date">Date</label>
+              <input id="f-date" type="date" required class="champ">
+            </div>
+          </div>
+          <div>
+            <label class="etiq" for="f-montant">Montant (FCFA)</label>
+            <input id="f-montant" type="number" inputmode="numeric" min="1" step="1" required class="champ">
+          </div>
+          <div>
+            <label class="etiq" for="f-cat">Catégorie</label>
+            <input id="f-cat" list="liste-cat" required class="champ" autocomplete="off">
+            <datalist id="liste-cat">
+              <option value="Ventes"></option>
+              <option value="Prestations"></option>
+              <option value="Salaires"></option>
+              <option value="Loyer"></option>
+              <option value="Fournitures"></option>
+              <option value="Transport"></option>
+              <option value="Communication"></option>
+              <option value="Impôts et taxes"></option>
+              <option value="Autre"></option>
+            </datalist>
+          </div>
+          <div>
+            <label class="etiq" for="f-desc">Description (facultatif)</label>
+            <input id="f-desc" class="champ">
+          </div>
+          <div>
+            <label class="etiq" for="f-fichier">Justificatif (photo ou PDF, facultatif)</label>
+            <input id="f-fichier" type="file" accept="image/*,application/pdf" class="champ">
+          </div>
+          <button id="btn-fin" class="btn w-full" type="submit">Enregistrer l'opération</button>
+          <p id="msg-fin" class="text-sm hidden"></p>
+        </form>
+      </section>
+
+      <section class="carte">
+        <h2 class="font-bold text-lg">Opérations du mois</h2>
+        <div id="liste-fin" class="mt-3 divide-y divide-slate-100"></div>
+        <p id="msg-liste-fin" class="text-sm hidden mt-3"></p>
+      </section>
+    </div>
 
     <button id="btn-logout" class="btn-clair w-full" type="button">Se déconnecter</button>
   </main>
@@ -173,6 +275,8 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('fr-FR');
 const nbJours = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000) + 1;
+const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const fcfa = (n) => new Intl.NumberFormat('fr-FR').format(Number(n) || 0) + ' FCFA';
 
 const TYPES = { annuel: 'Congé annuel', maladie: 'Maladie', maternite_paternite: 'Maternité / paternité', sans_solde: 'Sans solde', autre: 'Autre' };
 const STATUTS = {
@@ -193,6 +297,19 @@ function show(id, visible) { $(id).classList.toggle('hidden', !visible); }
 
 let me = null;   // utilisateur connecté
 let emp = null;  // son dossier employé
+let ops = [];    // opérations financières chargées
+
+/* ---------- Onglets ---------- */
+const TAB_ON = 'flex-1 rounded-xl bg-ocean px-3 py-2 text-sm font-semibold text-white';
+const TAB_OFF = 'flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700';
+function afficherOnglet(nom) {
+  show('onglet-rh', nom === 'rh');
+  show('onglet-fin', nom === 'fin');
+  $('tab-rh').className = nom === 'rh' ? TAB_ON : TAB_OFF;
+  $('tab-fin').className = nom === 'fin' ? TAB_ON : TAB_OFF;
+}
+$('tab-rh').addEventListener('click', () => afficherOnglet('rh'));
+$('tab-fin').addEventListener('click', () => afficherOnglet('fin'));
 
 /* ---------- Connexion ---------- */
 function showLogin() {
@@ -221,7 +338,7 @@ $('form-login').addEventListener('submit', async (e) => {
 
 $('btn-logout').addEventListener('click', async () => {
   await db.auth.signOut();
-  me = null; emp = null;
+  me = null; emp = null; ops = [];
   showLogin();
 });
 
@@ -246,14 +363,18 @@ async function loadApp() {
 
   renderDossier();
   const estAdmin = me.role === 'admin';
+  const accesFin = me.role === 'admin' || me.role === 'comptable';
   show('sec-conge', !!emp);
   show('sec-mes', !!emp);
   show('sec-traiter', estAdmin);
   show('sec-employe', estAdmin);
+  show('onglets', accesFin);
 
   if (emp) await loadMesConges();
   if (estAdmin) await loadATraiter();
+  if (accesFin) await loadFinances();
 
+  afficherOnglet('rh');
   show('vue-login', false);
   show('vue-app', true);
 }
@@ -312,7 +433,7 @@ $('form-conge').addEventListener('submit', async (e) => {
   if (me.role === 'admin') await loadATraiter();
 });
 
-/* ---------- Espace administrateur ---------- */
+/* ---------- Espace administrateur : demandes de congé ---------- */
 async function loadATraiter() {
   const { data, error } = await db.from('conges')
     .select('id,type,date_debut,date_fin,motif,employes(nom,prenom)')
@@ -349,21 +470,46 @@ $('liste-traiter').addEventListener('click', async (e) => {
   if (emp) await loadMesConges();
 });
 
+/* ---------- Espace administrateur : ajout d'un employé (avec création du compte) ---------- */
 $('form-employe').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearMsg('msg-employe');
+  const prenom = $('e-prenom').value.trim();
+  const nom = $('e-nom').value.trim();
+  const email = $('e-email').value.trim().toLowerCase();
+  const mdp = $('e-mdp').value;
+  const role = $('e-role').value;
   let utilisateurId = null;
-  const email = $('e-email').value.trim();
+  let compteCree = false;
+
   if (email) {
     const { data } = await db.from('utilisateurs').select('id').eq('email', email).maybeSingle();
-    if (!data) { msg('msg-employe', 'Aucun compte avec cet email. Crée d\'abord le compte dans Supabase (Authentication).', false); return; }
-    utilisateurId = data.id;
+    if (data) {
+      utilisateurId = data.id;
+    } else {
+      if (mdp.length < 8) {
+        msg('msg-employe', 'Aucun compte avec cet email. Saisis un mot de passe provisoire d\'au moins 8 caractères pour le créer.', false);
+        return;
+      }
+      // Client séparé : la session de l'administrateur n'est pas touchée
+      const tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'novasoft-creation' }
+      });
+      const r = await tmp.auth.signUp({ email, password: mdp, options: { data: { nom: prenom + ' ' + nom } } });
+      if (r.error || !r.data || !r.data.user) {
+        msg('msg-employe', 'Création du compte impossible : ' + (r.error ? r.error.message : 'réponse vide'), false);
+        return;
+      }
+      utilisateurId = r.data.user.id;
+      compteCree = true;
+    }
   }
+
   const { error } = await db.from('employes').insert({
     utilisateur_id: utilisateurId,
     matricule: $('e-matricule').value.trim(),
-    prenom: $('e-prenom').value.trim(),
-    nom: $('e-nom').value.trim(),
+    prenom: prenom,
+    nom: nom,
     poste: $('e-poste').value.trim() || null,
     departement: $('e-dep').value.trim() || null
   });
@@ -372,12 +518,122 @@ $('form-employe').addEventListener('submit', async (e) => {
     msg('msg-employe', doublon ? 'Ce matricule ou ce compte a déjà un dossier.' : 'Enregistrement impossible : ' + error.message, false);
     return;
   }
-  msg('msg-employe', 'Employé enregistré.', true);
+
+  let avert = '';
+  if (utilisateurId && role !== 'employe') {
+    const u = await db.from('utilisateurs').update({ role: role }).eq('id', utilisateurId);
+    if (u.error) avert = ' Le rôle n\'a pas pu être changé : ' + u.error.message;
+  }
+  msg('msg-employe', 'Employé enregistré.' + (compteCree ? ' Compte créé : il peut se connecter avec cet email et le mot de passe provisoire.' : '') + avert, !avert);
   $('form-employe').reset();
   if (utilisateurId === me.id) await loadApp();
 });
 
+/* ---------- Finances ---------- */
+async function loadFinances() {
+  const { data, error } = await db.from('finances')
+    .select('id,date,type,montant,categorie,description,justificatif_url')
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1000);
+  if (error) { msg('msg-liste-fin', 'Impossible de charger les opérations : ' + error.message, false); return; }
+  clearMsg('msg-liste-fin');
+  ops = data;
+  renderFinances();
+}
+
+function renderFinances() {
+  const mois = $('f-mois').value;
+  const duMois = ops.filter((o) => o.date.startsWith(mois));
+  const somme = (liste, type) => liste.filter((o) => o.type === type).reduce((s, o) => s + Number(o.montant), 0);
+  const rec = somme(duMois, 'recette');
+  const dep = somme(duMois, 'depense');
+  $('k-rec').textContent = fcfa(rec);
+  $('k-dep').textContent = fcfa(dep);
+  $('k-solde').textContent = fcfa(rec - dep);
+  $('k-total').textContent = fcfa(somme(ops, 'recette') - somme(ops, 'depense'));
+
+  const box = $('liste-fin');
+  if (!duMois.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune opération ce mois-ci.</p>'; return; }
+  box.innerHTML = duMois.map((o) => {
+    const entree = o.type === 'recette';
+    return '<div class="py-3 flex items-start justify-between gap-3">'
+      + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(o.categorie) + '</p>'
+      + '<p class="text-xs text-slate-500">' + fmtDate(o.date) + (o.description ? ' · ' + esc(o.description) : '') + '</p>'
+      + '<div class="mt-1 flex gap-3 text-xs font-semibold">'
+      + (o.justificatif_url ? '<button class="text-ocean" data-act="justif" data-path="' + esc(o.justificatif_url) + '">Voir le justificatif</button>' : '')
+      + '<button class="text-rose-600" data-act="suppr" data-id="' + esc(o.id) + '">Supprimer</button>'
+      + '</div></div>'
+      + '<p class="shrink-0 text-sm font-bold ' + (entree ? 'text-lumina-dark' : 'text-rose-600') + '">' + (entree ? '+ ' : '− ') + fcfa(o.montant) + '</p></div>';
+  }).join('');
+}
+
+$('f-mois').addEventListener('change', renderFinances);
+
+$('liste-fin').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  clearMsg('msg-liste-fin');
+  if (btn.dataset.act === 'justif') {
+    const fenetre = window.open('', '_blank');
+    const { data, error } = await db.storage.from('justificatifs').createSignedUrl(btn.dataset.path, 120);
+    if (error || !data) {
+      if (fenetre) fenetre.close();
+      msg('msg-liste-fin', 'Justificatif introuvable : ' + (error ? error.message : ''), false);
+      return;
+    }
+    if (fenetre) fenetre.location = data.signedUrl; else window.location.href = data.signedUrl;
+  } else if (btn.dataset.act === 'suppr') {
+    if (!window.confirm('Supprimer cette opération ? Cette action est définitive.')) return;
+    const op = ops.find((o) => o.id === btn.dataset.id);
+    const { error } = await db.from('finances').delete().eq('id', btn.dataset.id);
+    if (error) { msg('msg-liste-fin', 'Suppression impossible : ' + error.message, false); return; }
+    if (op && op.justificatif_url) await db.storage.from('justificatifs').remove([op.justificatif_url]);
+    await loadFinances();
+  }
+});
+
+$('form-fin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMsg('msg-fin');
+  const montant = Math.round(Number($('f-montant').value));
+  if (!(montant > 0)) { msg('msg-fin', 'Saisis un montant supérieur à zéro.', false); return; }
+  const btn = $('btn-fin');
+  btn.disabled = true;
+  try {
+    let chemin = null;
+    const fichier = $('f-fichier').files[0];
+    if (fichier) {
+      if (fichier.size > 10 * 1024 * 1024) { msg('msg-fin', 'Le justificatif dépasse 10 Mo.', false); return; }
+      chemin = me.id + '/' + Date.now() + '-' + fichier.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const up = await db.storage.from('justificatifs').upload(chemin, fichier, { contentType: fichier.type || undefined });
+      if (up.error) { msg('msg-fin', 'Envoi du justificatif impossible : ' + up.error.message, false); return; }
+    }
+    const { error } = await db.from('finances').insert({
+      type: $('f-type').value,
+      date: $('f-date').value,
+      montant: montant,
+      categorie: $('f-cat').value.trim(),
+      description: $('f-desc').value.trim() || null,
+      justificatif_url: chemin
+    });
+    if (error) {
+      if (chemin) await db.storage.from('justificatifs').remove([chemin]);
+      msg('msg-fin', 'Enregistrement impossible : ' + error.message, false);
+      return;
+    }
+    msg('msg-fin', 'Opération enregistrée.', true);
+    $('form-fin').reset();
+    $('f-date').value = iso(new Date());
+    await loadFinances();
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 /* ---------- Démarrage ---------- */
+$('f-mois').value = iso(new Date()).slice(0, 7);
+$('f-date').value = iso(new Date());
 (async () => {
   try {
     const { data: { session } } = await db.auth.getSession();
