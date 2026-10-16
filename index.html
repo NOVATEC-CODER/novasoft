@@ -347,7 +347,7 @@ async function loadApp() {
   const { data: { user } } = await db.auth.getUser();
   if (!user) { showLogin(); return; }
 
-  const { data, error } = await db.from('utilisateurs').select('id,nom,email,role').eq('id', user.id).maybeSingle();
+  const { data, error } = await db.from('utilisateurs').select('id,nom,email,role,organisation_id').eq('id', user.id).maybeSingle();
   if (error || !data) {
     await db.auth.signOut();
     showLogin();
@@ -355,8 +355,15 @@ async function loadApp() {
     return;
   }
   me = data;
+  if (!me.organisation_id) {
+    await db.auth.signOut();
+    showLogin();
+    msg('msg-login', 'Ce compte n\'est rattaché à aucune entreprise. Contacte ton administrateur.', false);
+    return;
+  }
+  const org = await db.from('organisations').select('nom').eq('id', me.organisation_id).maybeSingle();
   $('who').textContent = me.nom;
-  $('role').textContent = ROLES[me.role] || me.role;
+  $('role').textContent = (ROLES[me.role] || me.role) + (org.data ? ' · ' + org.data.nom : '');
 
   const r = await db.from('employes').select('*').eq('utilisateur_id', me.id).maybeSingle();
   emp = r.data || null;
@@ -491,13 +498,19 @@ $('form-employe').addEventListener('submit', async (e) => {
         msg('msg-employe', 'Aucun compte avec cet email. Saisis un mot de passe provisoire d\'au moins 8 caractères pour le créer.', false);
         return;
       }
+      // L'invitation donne au nouveau compte l'entreprise et le rôle
+      await db.from('invitations').delete().eq('email', email);
+      const inv = await db.from('invitations').insert({ email: email, role: role });
+      if (inv.error) { msg('msg-employe', 'Invitation impossible : ' + inv.error.message, false); return; }
       // Client séparé : la session de l'administrateur n'est pas touchée
       const tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'novasoft-creation' }
       });
       const r = await tmp.auth.signUp({ email, password: mdp, options: { data: { nom: prenom + ' ' + nom } } });
       if (r.error || !r.data || !r.data.user) {
-        msg('msg-employe', 'Création du compte impossible : ' + (r.error ? r.error.message : 'réponse vide'), false);
+        await db.from('invitations').delete().eq('email', email);
+        const deja = r.error && /already/i.test(r.error.message);
+        msg('msg-employe', deja ? 'Cet email est déjà utilisé par un autre compte.' : 'Création du compte impossible : ' + (r.error ? r.error.message : 'réponse vide'), false);
         return;
       }
       utilisateurId = r.data.user.id;
@@ -520,7 +533,7 @@ $('form-employe').addEventListener('submit', async (e) => {
   }
 
   let avert = '';
-  if (utilisateurId && role !== 'employe') {
+  if (utilisateurId && !compteCree && role !== 'employe') {
     const u = await db.from('utilisateurs').update({ role: role }).eq('id', utilisateurId);
     if (u.error) avert = ' Le rôle n\'a pas pu être changé : ' + u.error.message;
   }
