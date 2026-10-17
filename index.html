@@ -61,14 +61,15 @@
       </div>
       <div class="text-right min-w-0">
         <p id="who" class="text-sm font-semibold truncate"></p>
-        <p id="role" class="text-xs text-slate-500"></p>
+        <p id="role" class="text-[11px] text-slate-500 truncate"></p>
       </div>
     </div>
   </header>
 
   <nav id="onglets" class="hidden max-w-2xl mx-auto px-4 pt-4 flex gap-2">
-    <button id="tab-rh" type="button">Ressources humaines</button>
+    <button id="tab-rh" type="button">RH</button>
     <button id="tab-fin" type="button">Finances</button>
+    <button id="tab-ent" type="button">Entreprises</button>
   </nav>
 
   <main class="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -256,6 +257,64 @@
       </section>
     </div>
 
+    <!-- ========== Onglet Entreprises (super-administrateurs) ========== -->
+    <div id="onglet-ent" class="hidden space-y-6">
+
+      <section class="carte">
+        <h2 class="font-bold text-lg">Entreprises clientes</h2>
+        <div id="liste-ent" class="mt-3 divide-y divide-slate-100"></div>
+        <p id="msg-liste-ent" class="text-sm hidden mt-3"></p>
+      </section>
+
+      <section class="carte">
+        <h2 class="font-bold text-lg">Nouvelle entreprise</h2>
+        <p class="text-sm text-slate-500 mt-1">Crée l'entreprise et le compte de son premier administrateur.</p>
+        <form id="form-ent" class="mt-4 space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="etiq" for="n-nom">Nom de l'entreprise</label>
+              <input id="n-nom" required class="champ">
+            </div>
+            <div>
+              <label class="etiq" for="n-sigle">Sigle</label>
+              <input id="n-sigle" class="champ">
+            </div>
+          </div>
+          <div>
+            <label class="etiq" for="n-admin-nom">Nom de l'administrateur</label>
+            <input id="n-admin-nom" required class="champ">
+          </div>
+          <div>
+            <label class="etiq" for="n-admin-email">Email de l'administrateur</label>
+            <input id="n-admin-email" type="email" required class="champ">
+          </div>
+          <div>
+            <label class="etiq" for="n-admin-mdp">Mot de passe provisoire (8 caractères minimum)</label>
+            <input id="n-admin-mdp" type="password" autocomplete="new-password" required minlength="8" class="champ">
+          </div>
+          <button id="btn-ent" class="btn w-full" type="submit">Créer l'entreprise</button>
+          <p id="msg-ent" class="text-sm hidden"></p>
+        </form>
+      </section>
+    </div>
+
+    <!-- ========== Mon compte ========== -->
+    <details class="carte">
+      <summary class="font-bold text-lg cursor-pointer">Changer mon mot de passe</summary>
+      <form id="form-mdp" class="mt-4 space-y-4">
+        <div>
+          <label class="etiq" for="m-nouveau">Nouveau mot de passe (12 caractères conseillés)</label>
+          <input id="m-nouveau" type="password" autocomplete="new-password" required minlength="8" class="champ">
+        </div>
+        <div>
+          <label class="etiq" for="m-confirm">Confirmer le mot de passe</label>
+          <input id="m-confirm" type="password" autocomplete="new-password" required class="champ">
+        </div>
+        <button class="btn w-full" type="submit">Mettre à jour</button>
+        <p id="msg-mdp" class="text-sm hidden"></p>
+      </form>
+    </details>
+
     <button id="btn-logout" class="btn-clair w-full" type="button">Se déconnecter</button>
   </main>
 </div>
@@ -285,7 +344,7 @@ const STATUTS = {
   refuse: ['Refusé', 'bg-rose-50 text-rose-700'],
   annule: ['Annulé', 'bg-slate-100 text-slate-600']
 };
-const ROLES = { admin: 'Administrateur', comptable: 'Comptable', employe: 'Employé' };
+const ROLES = { admin: 'Admin', comptable: 'Comptable', employe: 'Employé' };
 
 function msg(id, texte, ok) {
   const el = $(id);
@@ -300,16 +359,20 @@ let emp = null;  // son dossier employé
 let ops = [];    // opérations financières chargées
 
 /* ---------- Onglets ---------- */
-const TAB_ON = 'flex-1 rounded-xl bg-ocean px-3 py-2 text-sm font-semibold text-white';
-const TAB_OFF = 'flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700';
+const TAB_ON = 'flex-1 rounded-xl bg-ocean px-2 py-2 text-[13px] font-semibold text-white';
+const TAB_OFF = 'flex-1 rounded-xl border border-slate-300 bg-white px-2 py-2 text-[13px] font-semibold text-slate-700';
+const acces = { fin: false, ent: false };
 function afficherOnglet(nom) {
-  show('onglet-rh', nom === 'rh');
-  show('onglet-fin', nom === 'fin');
-  $('tab-rh').className = nom === 'rh' ? TAB_ON : TAB_OFF;
-  $('tab-fin').className = nom === 'fin' ? TAB_ON : TAB_OFF;
+  ['rh', 'fin', 'ent'].forEach((n) => {
+    show('onglet-' + n, nom === n);
+    $('tab-' + n).className = nom === n ? TAB_ON : TAB_OFF;
+  });
+  if (!acces.fin) $('tab-fin').classList.add('hidden');
+  if (!acces.ent) $('tab-ent').classList.add('hidden');
 }
 $('tab-rh').addEventListener('click', () => afficherOnglet('rh'));
 $('tab-fin').addEventListener('click', () => afficherOnglet('fin'));
+$('tab-ent').addEventListener('click', () => afficherOnglet('ent'));
 
 /* ---------- Connexion ---------- */
 function showLogin() {
@@ -371,15 +434,20 @@ async function loadApp() {
   renderDossier();
   const estAdmin = me.role === 'admin';
   const accesFin = me.role === 'admin' || me.role === 'comptable';
+  const sa = await db.rpc('est_super_admin');
+  const estSuper = sa.data === true;
+  acces.fin = accesFin;
+  acces.ent = estSuper;
   show('sec-conge', !!emp);
   show('sec-mes', !!emp);
   show('sec-traiter', estAdmin);
   show('sec-employe', estAdmin);
-  show('onglets', accesFin);
+  show('onglets', accesFin || estSuper);
 
   if (emp) await loadMesConges();
   if (estAdmin) await loadATraiter();
   if (accesFin) await loadFinances();
+  if (estSuper) await loadEntreprises();
 
   afficherOnglet('rh');
   show('vue-login', false);
@@ -642,6 +710,71 @@ $('form-fin').addEventListener('submit', async (e) => {
   } finally {
     btn.disabled = false;
   }
+});
+
+/* ---------- Entreprises (super-administrateurs) ---------- */
+async function loadEntreprises() {
+  const { data, error } = await db.from('organisations').select('id,nom,sigle,created_at').order('created_at', { ascending: true });
+  const box = $('liste-ent');
+  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">Impossible de charger les entreprises.</p>'; return; }
+  if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune entreprise.</p>'; return; }
+  box.innerHTML = data.map((o) => '<div class="py-3">'
+    + '<p class="text-sm font-semibold">' + esc(o.nom) + (o.sigle ? ' (' + esc(o.sigle) + ')' : '') + '</p>'
+    + '<p class="text-xs text-slate-500">Créée le ' + new Date(o.created_at).toLocaleDateString('fr-FR') + '</p></div>').join('');
+}
+
+$('form-ent').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMsg('msg-ent');
+  const nom = $('n-nom').value.trim();
+  const sigle = $('n-sigle').value.trim() || null;
+  const adminNom = $('n-admin-nom').value.trim();
+  const email = $('n-admin-email').value.trim().toLowerCase();
+  const mdp = $('n-admin-mdp').value;
+  if (mdp.length < 8) { msg('msg-ent', 'Le mot de passe doit contenir au moins 8 caractères.', false); return; }
+  const btn = $('btn-ent');
+  btn.disabled = true;
+  try {
+    const o = await db.from('organisations').insert({ nom: nom, sigle: sigle }).select('id').single();
+    if (o.error) { msg('msg-ent', 'Création de l\'entreprise impossible : ' + o.error.message, false); return; }
+    const orgId = o.data.id;
+    await db.from('invitations').delete().eq('email', email);
+    const inv = await db.from('invitations').insert({ email: email, role: 'admin', organisation_id: orgId });
+    if (inv.error) {
+      await db.from('organisations').delete().eq('id', orgId);
+      msg('msg-ent', 'Invitation impossible : ' + inv.error.message, false);
+      return;
+    }
+    const tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'novasoft-creation' }
+    });
+    const r = await tmp.auth.signUp({ email, password: mdp, options: { data: { nom: adminNom } } });
+    if (r.error || !r.data || !r.data.user) {
+      await db.from('invitations').delete().eq('email', email);
+      await db.from('organisations').delete().eq('id', orgId);
+      const deja = r.error && /already/i.test(r.error.message);
+      msg('msg-ent', deja ? 'Cet email est déjà utilisé par un autre compte.' : 'Création du compte impossible : ' + (r.error ? r.error.message : 'réponse vide'), false);
+      return;
+    }
+    msg('msg-ent', 'Entreprise créée. Son administrateur peut se connecter avec cet email et le mot de passe provisoire.', true);
+    $('form-ent').reset();
+    await loadEntreprises();
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- Mon compte : changer le mot de passe ---------- */
+$('form-mdp').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMsg('msg-mdp');
+  const nouveau = $('m-nouveau').value;
+  if (nouveau.length < 8) { msg('msg-mdp', 'Le mot de passe doit contenir au moins 8 caractères.', false); return; }
+  if (nouveau !== $('m-confirm').value) { msg('msg-mdp', 'Les deux mots de passe ne sont pas identiques.', false); return; }
+  const { error } = await db.auth.updateUser({ password: nouveau });
+  if (error) { msg('msg-mdp', 'Changement impossible : ' + error.message, false); return; }
+  msg('msg-mdp', 'Mot de passe mis à jour.', true);
+  $('form-mdp').reset();
 });
 
 /* ---------- Démarrage ---------- */
