@@ -138,17 +138,14 @@ const MODELE_FINANCES = `
 /* ---------- Mise en place du module (appelée une fois au chargement de la page) ---------- */
 function initFinances() {
   $('onglet-fin').innerHTML = MODELE_FINANCES;
-  $('f-mois').value = iso(new Date()).slice(0, 7);
-  $('f-date').value = iso(new Date());
+  $('f-mois').value = iso(new Date()).slice(0, 7);$('f-date').value = iso(new Date());
 
-  $('f-mois').addEventListener('change', rendreOperations);
-  $('f-caisse').addEventListener('change', () => {
+  $('f-mois').addEventListener('change', rendreOperations);$('f-caisse').addEventListener('change', () => {
     const c = caisses.find((x) => x.id === $('f-caisse').value);
     if (c && MODE_PAR_TYPE[c.type]) $('f-mode').value = MODE_PAR_TYPE[c.type];
   });
-  $('form-caisse').addEventListener('submit', ajouterCaisse);
-  $('liste-fin').addEventListener('click', actionsOperation);
-  $('form-fin').addEventListener('submit', enregistrerOperation);
+  $('form-caisse').addEventListener('submit', ajouterCaisse);$('liste-caisses').addEventListener('click', actionsCaisse);
+  $('liste-fin').addEventListener('click', actionsOperation);$('form-fin').addEventListener('submit', enregistrerOperation);
 }
 
 /* ---------- Chargement ---------- */
@@ -177,13 +174,23 @@ async function chargerCaisses() {
 /* ---------- Affichage ---------- */
 function rendreCaisses() {
   const box = $('liste-caisses');
+  const estAdmin = (me && (me.role === 'super_admin' || me.role === 'admin_entreprise' || me.role === 'admin'));
+
   if (!caisses.length) {
     box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune caisse. Ajoute-en une ci-dessous.</p>';
   } else {
-    box.innerHTML = caisses.map((c) => '<div class="py-3 flex items-start justify-between gap-3">'
-      + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(c.nom) + '</p>'
-      + '<p class="text-xs text-slate-500">' + esc(TYPES_CAISSE[c.type] || c.type) + '</p></div>'
-      + '<p class="shrink-0 text-sm font-bold ' + (Number(c.solde) < 0 ? 'text-rose-600' : 'text-slate-800') + '">' + fcfa(c.solde) + '</p></div>').join('');
+    box.innerHTML = caisses.map((c) => {
+      return '<div class="py-3 flex items-start justify-between gap-3">'
+        + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(c.nom) + '</p>'
+        + '<p class="text-xs text-slate-500">' + esc(TYPES_CAISSE[c.type] || c.type) + '</p></div>'
+        + '<div class="flex items-center gap-3 shrink-0">'
+        + '<p class="text-sm font-bold ' + (Number(c.solde) < 0 ? 'text-rose-600' : 'text-slate-800') + '">' + fcfa(c.solde) + '</p>'
+        + (estAdmin ? '<div class="flex items-center gap-1">'
+          + '<button class="text-slate-400 hover:text-ocean text-xs p-1" data-act="edit-caisse" data-id="' + esc(c.id) + '" data-nom="' + esc(c.nom) + '" title="Modifier le nom">✏️</button>'
+          + '<button class="text-slate-400 hover:text-rose-600 text-xs p-1" data-act="suppr-caisse" data-id="' + esc(c.id) + '" title="Supprimer le compte">🗑️</button>'
+          + '</div>' : '')
+        + '</div></div>';
+    }).join('');
   }
   $('k-total').textContent = fcfa(caisses.reduce((s, c) => s + Number(c.solde), 0));
 
@@ -203,8 +210,7 @@ function rendreOperations() {
   const rec = somme(duMois, 'recette');
   const dep = somme(duMois, 'depense');
   $('k-rec').textContent = fcfa(rec);
-  $('k-dep').textContent = fcfa(dep);
-  $('k-solde').textContent = fcfa(rec - dep);
+  $('k-dep').textContent = fcfa(dep);$('k-solde').textContent = fcfa(rec - dep);
 
   const box = $('liste-fin');
   if (!duMois.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune opération ce mois-ci.</p>'; return; }
@@ -243,6 +249,42 @@ async function ajouterCaisse(e) {
   msg('msg-caisse', 'Caisse ajoutée.', true);
   $('form-caisse').reset();
   await chargerCaisses();
+}
+
+async function actionsCaisse(e) {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const caisseId = btn.dataset.id;
+
+  if (btn.dataset.act === 'edit-caisse') {
+    const nomActuel = btn.dataset.nom;
+    const nouveauNom = prompt("Corriger ou modifier le nom de la caisse / du compte :", nomActuel);
+    if (!nouveauNom || nouveauNom.trim() === "" || nouveauNom.trim() === nomActuel) return;
+
+    const { error } = await db
+      .from('caisses')
+      .update({ nom: nouveauNom.trim() })
+      .eq('id', caisseId);
+
+    if (error) {
+      alert("Erreur lors de la modification : " + error.message);
+    } else {
+      await chargerFinances();
+    }
+  } else if (btn.dataset.act === 'suppr-caisse') {
+    if (!confirm("Voulez-vous vraiment supprimer ce compte ou cette caisse ?")) return;
+
+    const { error } = await db
+      .from('caisses')
+      .delete()
+      .eq('id', caisseId);
+
+    if (error) {
+      alert("Suppression impossible (vérifiez s'il reste des opérations liées) : " + error.message);
+    } else {
+      await chargerFinances();
+    }
+  }
 }
 
 async function actionsOperation(e) {
@@ -302,8 +344,7 @@ async function enregistrerOperation(e) {
     }
     msg('msg-fin', 'Opération enregistrée.', true);
     const caisseChoisie = $('f-caisse').value;
-    $('form-fin').reset();
-    $('f-date').value = iso(new Date());
+    $('form-fin').reset();$('f-date').value = iso(new Date());
     await chargerFinances();
     $('f-caisse').value = caisseChoisie;
   } finally {
