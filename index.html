@@ -1,87 +1,65 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NovaSoft 1.0</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script>
-  tailwind.config = { theme: { extend: { colors: {
-    ocean: '#0052CC',
-    lumina: { DEFAULT: '#10B981', dark: '#059669' }
-  } } } };
-</script>
-<style type="text/tailwindcss">
-  @layer components {
-    .champ { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 focus:border-ocean; }
-    .btn { @apply rounded-xl bg-ocean px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50; }
-    .btn-clair { @apply rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50; }
-    .etiq { @apply block text-sm font-medium text-slate-600 mb-1; }
-    .carte { @apply bg-white border border-slate-200 rounded-2xl p-5; }
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NovaSoft 1.0 - Gestion RH & Finances</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .carte { @apply bg-white rounded-xl border border-slate-200 p-5 shadow-sm; }
+    .champ { @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500; }
+    .etiq { @apply block text-xs font-semibold text-slate-700 mb-1; }
+    .btn { @apply bg-blue-600 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50; }
+    .btn-clair { @apply bg-slate-100 text-slate-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-slate-200 transition; }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
 
-<!-- ================= CONNEXION ================= -->
-<div id="vue-login" class="min-h-screen flex items-center justify-center p-6 bg-white">
-  <div class="w-full max-w-sm">
-    <img data-logo alt="NovaSoft, un service de NOVATEC" width="900" height="450" class="block w-full h-auto mx-auto -my-6" onerror="this.style.display='none';document.getElementById('logo-texte').classList.remove('hidden')">
-    <h1 id="logo-texte" class="hidden text-3xl font-extrabold tracking-wide text-center"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></h1>
-    <p class="text-center mt-1"><span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">Version 1.0</span></p>
+<div id="app" class="p-4 md:p-8">
 
-    <form id="form-login" class="carte mt-8 space-y-4">
+  <!-- VUE CONNEXION -->
+  <div id="vue-login" class="max-w-md mx-auto my-12 carte">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-blue-600">NovaSoft</h1>
+      <p class="text-xs text-slate-500 mt-1">Connexion à votre espace entreprise</p>
+    </div>
+    <form id="form-login" class="space-y-4">
       <div>
-        <label class="etiq" for="login-email">Adresse email</label>
-        <input id="login-email" type="email" autocomplete="email" required class="champ">
+        <label class="etiq" for="login-email">Email</label>
+        <input id="login-email" type="email" required class="champ" placeholder="nom@entreprise.com">
       </div>
       <div>
         <label class="etiq" for="login-mdp">Mot de passe</label>
-        <input id="login-mdp" type="password" autocomplete="current-password" required class="champ">
+        <input id="login-mdp" type="password" required class="champ">
       </div>
       <button id="btn-login" class="btn w-full" type="submit">Se connecter</button>
       <p id="msg-login" class="text-sm hidden"></p>
     </form>
   </div>
-</div>
 
-<!-- ================= APPLICATION ================= -->
-<div id="vue-app" class="hidden">
-  <header class="bg-white border-b border-slate-200">
-    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2 shrink-0">
-        <div class="relative h-[29px] w-[150px] overflow-hidden">
-          <img data-logo alt="NovaSoft" class="absolute max-w-none" style="width:159px;left:-5.6px;top:-17.5px" onerror="this.parentNode.classList.add('hidden');document.getElementById('logo-texte-h').classList.remove('hidden')">
-        </div>
-        <span id="logo-texte-h" class="hidden text-xl font-extrabold tracking-wide"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></span>
-        <span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">1.0</span>
+  <!-- VUE APPLICATION -->
+  <div id="vue-app" class="hidden">
+    <header class="max-w-3xl mx-auto flex items-center justify-between py-4 mb-6 border-b border-slate-200">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-xl text-blue-600">NovaSoft</span>
+        <span class="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-md">1.0</span>
       </div>
-      <div class="text-right min-w-0">
-        <p id="who" class="text-sm font-semibold truncate"></p>
-        <p id="role" class="text-[11px] text-slate-500 truncate"></p>
+      <div class="text-right">
+        <p id="who" class="text-sm font-semibold"></p>
+        <p id="role" class="text-xs text-slate-500"></p>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <nav id="onglets" class="hidden max-w-2xl mx-auto px-4 pt-4 flex gap-2">
-    <button id="tab-rh" type="button">RH</button>
-    <button id="tab-fin" type="button">Finances</button>
-    <button id="tab-ent" type="button">Entreprises</button>
-  </nav>
+    <main class="max-w-3xl mx-auto space-y-6">
 
-  <main class="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
-    <!-- ========== Onglet RH ========== -->
-    <div id="onglet-rh" class="space-y-6">
-
+      <!-- Mon Dossier -->
       <section id="sec-dossier" class="carte">
         <h2 class="font-bold text-lg">Mon dossier</h2>
-        <p id="dossier-info" class="text-sm text-slate-600 mt-2"></p>
+        <div id="dossier-info" class="text-sm text-slate-600 mt-2"></div>
       </section>
 
+      <!-- Demande de congé -->
       <section id="sec-conge" class="carte hidden">
         <h2 class="font-bold text-lg">Demander un congé</h2>
         <form id="form-conge" class="mt-4 space-y-4">
@@ -114,21 +92,30 @@
         </form>
       </section>
 
+      <!-- Mes demandes -->
       <section id="sec-mes" class="carte hidden">
-        <h2 class="font-bold text-lg">Mes demandes</h2>
+        <h2 class="font-bold text-lg">Mes demandes de congés</h2>
         <div id="liste-mes" class="mt-3 divide-y divide-slate-100"></div>
       </section>
 
+      <!-- Traitement demandes (Admin) -->
       <section id="sec-traiter" class="carte hidden">
         <h2 class="font-bold text-lg">Demandes à traiter</h2>
         <div id="liste-traiter" class="mt-3 divide-y divide-slate-100"></div>
         <p id="msg-traiter" class="text-sm hidden mt-3"></p>
       </section>
 
+      <!-- FORMULAIRE COMPLET AJOUT EMPLOYÉ (Admin) -->
       <section id="sec-employe" class="carte hidden">
-        <h2 class="font-bold text-lg">Ajouter un employé</h2>
-        <p class="text-sm text-slate-500 mt-1">Pour créer aussi son compte, saisis son email et un mot de passe provisoire. Si le compte existe déjà, laisse le mot de passe vide.</p>
-        <form id="form-employe" class="mt-4 space-y-4">
+        <h2 class="font-bold text-lg">Ajouter un employé (Fiche complète)</h2>
+        <p class="text-xs text-slate-500 mt-1 mb-4">Renseignez la fiche complète du collaborateur.</p>
+        
+        <form id="form-employe" class="space-y-4">
+          <div>
+            <label class="etiq" for="e-photo">Photo d'identité</label>
+            <input id="e-photo" type="file" accept="image/*" class="champ">
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="etiq" for="e-prenom">Prénom</label>
@@ -139,194 +126,195 @@
               <input id="e-nom" required class="champ">
             </div>
           </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="etiq" for="e-matricule">Matricule</label>
               <input id="e-matricule" required class="champ">
             </div>
             <div>
-              <label class="etiq" for="e-poste">Poste</label>
+              <label class="etiq" for="e-poste">Poste / Fonction</label>
               <input id="e-poste" class="champ">
             </div>
           </div>
-          <div>
-            <label class="etiq" for="e-dep">Département</label>
-            <input id="e-dep" class="champ">
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="etiq" for="e-telephone">Téléphone</label>
+              <input id="e-telephone" type="tel" placeholder="+229..." class="champ">
+            </div>
+            <div>
+              <label class="etiq" for="e-date-embauche">Date d'embauche</label>
+              <input id="e-date-embauche" type="date" class="champ">
+            </div>
           </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="etiq" for="e-type-contrat">Type de contrat</label>
+              <select id="e-type-contrat" class="champ">
+                <option value="CDI">CDI</option>
+                <option value="CDD">CDD</option>
+                <option value="Stage">Stage</option>
+                <option value="Essai">Période d'essai</option>
+              </select>
+            </div>
+            <div>
+              <label class="etiq" for="e-dep">Département</label>
+              <input id="e-dep" class="champ">
+            </div>
+          </div>
+
           <div>
             <label class="etiq" for="e-email">Email du compte (facultatif)</label>
             <input id="e-email" type="email" class="champ">
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="e-mdp">Mot de passe provisoire</label>
-              <input id="e-mdp" type="password" autocomplete="new-password" class="champ">
-            </div>
-            <div>
-              <label class="etiq" for="e-role">Rôle</label>
-              <select id="e-role" class="champ">
-                <option value="employe">Employé</option>
-                <option value="comptable">Comptable</option>
-                <option value="admin">Administrateur</option>
-              </select>
-            </div>
-          </div>
+
           <button class="btn w-full" type="submit">Enregistrer l'employé</button>
           <p id="msg-employe" class="text-sm hidden"></p>
         </form>
       </section>
-    </div>
 
-    <!-- ========== Onglet Finances (contenu injecté par finances.js) ========== -->
-    <div id="onglet-fin" class="hidden space-y-6"></div>
+      <button id="btn-logout" class="btn-clair w-full mt-6" type="button">Se déconnecter</button>
+    </main>
+  </div>
 
-    <!-- ========== Onglet Entreprises (super-administrateurs) ========== -->
-    <div id="onglet-ent" class="hidden space-y-6">
-
-      <section class="carte">
-        <h2 class="font-bold text-lg">Entreprises clientes</h2>
-        <div id="liste-ent" class="mt-3 divide-y divide-slate-100"></div>
-        <p id="msg-liste-ent" class="text-sm hidden mt-3"></p>
-      </section>
-
-      <section class="carte">
-        <h2 class="font-bold text-lg">Nouvelle entreprise</h2>
-        <p class="text-sm text-slate-500 mt-1">Crée l'entreprise et le compte de son premier administrateur.</p>
-        <form id="form-ent" class="mt-4 space-y-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="n-nom">Nom de l'entreprise</label>
-              <input id="n-nom" required class="champ">
-            </div>
-            <div>
-              <label class="etiq" for="n-sigle">Sigle</label>
-              <input id="n-sigle" class="champ">
-            </div>
-          </div>
-          <div>
-            <label class="etiq" for="n-admin-nom">Nom de l'administrateur</label>
-            <input id="n-admin-nom" required class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="n-admin-email">Email de l'administrateur</label>
-            <input id="n-admin-email" type="email" required class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="n-admin-mdp">Mot de passe provisoire (8 caractères minimum)</label>
-            <input id="n-admin-mdp" type="password" autocomplete="new-password" required minlength="8" class="champ">
-          </div>
-          <button id="btn-ent" class="btn w-full" type="submit">Créer l'entreprise</button>
-          <p id="msg-ent" class="text-sm hidden"></p>
-        </form>
-      </section>
-    </div>
-
-    <!-- ========== Profil de l'entreprise (administrateurs) ========== -->
-    <details id="sec-profil" class="carte hidden">
-      <summary class="font-bold text-lg cursor-pointer">Profil de l'entreprise</summary>
-      <p class="text-sm text-slate-500 mt-2">Ces informations apparaîtront sur tes futures factures et documents.</p>
-      <form id="form-profil" class="mt-4 space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="p-nom">Nom</label>
-            <input id="p-nom" required class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="p-sigle">Sigle</label>
-            <input id="p-sigle" class="champ">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="p-ifu">IFU</label>
-            <input id="p-ifu" class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="p-rccm">RCCM</label>
-            <input id="p-rccm" class="champ">
-          </div>
-        </div>
-        <div>
-          <label class="etiq" for="p-adresse">Adresse</label>
-          <input id="p-adresse" class="champ">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="p-tel">Téléphone</label>
-            <input id="p-tel" type="tel" class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="p-email">Email</label>
-            <input id="p-email" type="email" class="champ">
-          </div>
-        </div>
-        <button class="btn w-full" type="submit">Enregistrer le profil</button>
-        <p id="msg-profil" class="text-sm hidden"></p>
-      </form>
-    </details>
-
-    <!-- ========== Mon compte ========== -->
-    <details class="carte">
-      <summary class="font-bold text-lg cursor-pointer">Changer mon mot de passe</summary>
-      <form id="form-mdp" class="mt-4 space-y-4">
-        <div>
-          <label class="etiq" for="m-nouveau">Nouveau mot de passe (12 caractères conseillés)</label>
-          <input id="m-nouveau" type="password" autocomplete="new-password" required minlength="8" class="champ">
-        </div>
-        <div>
-          <label class="etiq" for="m-confirm">Confirmer le mot de passe</label>
-          <input id="m-confirm" type="password" autocomplete="new-password" required class="champ">
-        </div>
-        <button class="btn w-full" type="submit">Mettre à jour</button>
-        <p id="msg-mdp" class="text-sm hidden"></p>
-      </form>
-    </details>
-
-    <button id="btn-logout" class="btn-clair w-full" type="button">Se déconnecter</button>
-  </main>
 </div>
 
-<script src="core.js?v=1"></script>
-<script src="finances.js?v=1"></script>
 <script>
-  // Fonctions de modification et de suppression des caisses et comptes (réservées aux admins / super_admins)
-  async function editerCaisse(caisseId, nomActuel) {
-    const nouveauNom = prompt("Corriger ou modifier le nom de la caisse / du compte :", nomActuel);
-    if (!nouveauNom || nouveauNom.trim() === "" || nouveauNom.trim() === nomActuel) return;
+  const SUPABASE_URL = 'https://tnsvcvbrybzelfxxhttn.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_R2Jh5Ta4PT2K-3z0MlLtCg_AdXHtXvh';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const { error } = await db
-      .from('caisses')
-      .update({ nom: nouveauNom.trim() })
-      .eq('id', caisseId);
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmtDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('fr-FR');
+  const ROLES = { admin: 'Administrateur', comptable: 'Comptable', employe: 'Employé' };
 
-    if (error) {
-      alert("Erreur lors de la modification : " + error.message);
+  function msg(id, texte, ok) {
+    const el = $(id);
+    el.textContent = texte;
+    el.className = 'text-sm ' + (ok ? 'text-emerald-700' : 'text-rose-600');
+  }
+  function clearMsg(id) { $(id).className = 'text-sm hidden'; }
+  function show(id, visible) { $(id).classList.toggle('hidden', !visible); }
+
+  let me = null;
+  let emp = null;
+
+  function showLogin() { show('vue-app', false); show('vue-login', true); }
+
+  $('form-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearMsg('msg-login');
+    const btn = $('btn-login');
+    btn.disabled = true;
+    try {
+      const { error } = await db.auth.signInWithPassword({
+        email: $('login-email').value.trim(),
+        password: $('login-mdp').value
+      });
+      if (error) { msg('msg-login', 'Email ou mot de passe incorrect.', false); return; }
+      await loadApp();
+    } catch (err) {
+      msg('msg-login', 'Connexion impossible.', false);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $('btn-logout').addEventListener('click', async () => {
+    await db.auth.signOut();
+    me = null; emp = null;
+    showLogin();
+  });
+
+  async function loadApp() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) { showLogin(); return; }
+
+    const { data, error } = await db.from('utilisateurs').select('id,nom,email,role').eq('id', user.id).maybeSingle();
+    if (error || !data) {
+      await db.auth.signOut();
+      showLogin();
+      msg('msg-login', "Ce compte n'est pas enregistré.", false);
+      return;
+    }
+    me = data;
+    $('who').textContent = me.nom;
+    $('role').textContent = ROLES[me.role] || me.role;
+
+    const r = await db.from('employes').select('*').eq('utilisateur_id', me.id).maybeSingle();
+    emp = r.data || null;
+
+    renderDossier();
+    const estAdmin = me.role === 'admin';
+    show('sec-conge', !!emp);
+    show('sec-mes', !!emp);
+    show('sec-traiter', estAdmin);
+    show('sec-employe', estAdmin);
+
+    show('vue-login', false);
+    show('vue-app', true);
+  }
+
+  function renderDossier() {
+    const info = $('dossier-info');
+    if (emp) {
+      const photoHtml = emp.photo_url ? `<img src="${esc(emp.photo_url)}" class="w-16 h-16 rounded-full object-cover mb-3">` : '';
+      info.innerHTML = photoHtml
+        + '<p class="font-semibold text-base">' + esc(emp.prenom + ' ' + emp.nom) + '</p>'
+        + '<p class="text-xs text-slate-500">' + esc(emp.poste || 'Non spécifié') + ' · ' + esc(emp.type_contrat || 'CDI') + '</p>'
+        + '<p class="text-xs text-slate-500 mt-1">Matricule: ' + esc(emp.matricule) + ' · Tél: ' + esc(emp.telephone || 'Non renseigné') + '</p>';
+    } else if (me.role === 'admin') {
+      info.textContent = "Vous n'avez pas de dossier employé personnel.";
     } else {
-      alert("Nom mis à jour avec succès !");
-      if (typeof loadFinances === 'function') await loadFinances();
-      else if (typeof loadApp === 'function') await loadApp();
+      info.textContent = "Dossier non encore créé par l'administrateur.";
     }
   }
 
-  async function supprimerCaisse(caisseId) {
-    if (!confirm("Voulez-vous vraiment supprimer ce compte ou cette caisse ?")) return;
+  // Enregistrement de l'employé avec photo
+  $('form-employe').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearMsg('msg-employe');
 
-    const { error } = await db
-      .from('caisses')
-      .delete()
-      .eq('id', caisseId);
+    const file = $('e-photo').files[0];
+    let photoUrl = null;
 
-    if (error) {
-      alert("Suppression impossible (vérifiez s'il reste des opérations liées) : " + error.message);
-    } else {
-      alert("Compte/caisse supprimé avec succès.");
-      if (typeof loadFinances === 'function') await loadFinances();
-      else if (typeof loadApp === 'function') await loadApp();
+    if (file) {
+      const ext = file.name.split('.').pop();
+      const path = `employes/${Date.now()}.${ext}`;
+      const { error: upErr } = await db.storage.from('avatars').upload(path, file);
+      if (upErr) {
+        msg('msg-employe', "Erreur envoi photo: " + upErr.message, false);
+        return;
+      }
+      const { data: urlData } = db.storage.from('avatars').getPublicUrl(path);
+      photoUrl = urlData.publicUrl;
     }
-  }
 
-  // Démarrage : quand tous les scripts sont chargés
-  window.addEventListener('load', () => { initFinances(); demarrer(); });
+    const payload = {
+      prenom: $('e-prenom').value.trim(),
+      nom: $('e-nom').value.trim(),
+      matricule: $('e-matricule').value.trim(),
+      poste: $('e-poste').value.trim(),
+      telephone: $('e-telephone').value.trim(),
+      date_embauche: $('e-date-embauche').value || null,
+      type_contrat: $('e-type-contrat').value,
+      departement: $('e-dep').value.trim(),
+      photo_url: photoUrl
+    };
+
+    const { error } = await db.from('employes').insert([payload]);
+    if (error) {
+      msg('msg-employe', "Erreur enregistrement: " + error.message, false);
+    } else {
+      msg('msg-employe', "Employé créé avec succès !", true);
+      $('form-employe').reset();
+    }
+  });
+
+  loadApp();
 </script>
 </body>
 </html>
