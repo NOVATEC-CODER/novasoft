@@ -286,45 +286,12 @@
   </main>
 </div>
 
-<script src="core.js?v=1"></script>
-<script src="finances.js?v=1"></script>
 <script>
-  // Fonctions de modification et de suppression des caisses et comptes (réservées aux admins / super_admins)
-  async function editerCaisse(caisseId, nomActuel) {
-    const nouveauNom = prompt("Corriger ou modifier le nom de la caisse / du compte :", nomActuel);
-    if (!nouveauNom || nouveauNom.trim() === "" || nouveauNom.trim() === nomActuel) return;
-
-    const { error } = await db
-      .from('caisses')
-      .update({ nom: nouveauNom.trim() })
-      .eq('id', caisseId);
-
-    if (error) {
-      alert("Erreur lors de la modification : " + error.message);
-    } else {
-      alert("Nom mis à jour avec succès !");
-      if (typeof loadFinances === 'function') await loadFinances();
-      else if (typeof loadApp === 'function') await loadApp();
-    }
-  }
-
-  async function supprimerCaisse(caisseId) {
-    if (!confirm("Voulez-vous vraiment supprimer ce compte ou cette caisse ?")) return;
-
-    const { error } = await db
-      .from('caisses')
-      .delete()
-      .eq('id', caisseId);
-
-    if (error) {
-      alert("Suppression impossible (vérifiez s'il reste des opérations liées) : " + error.message);
-    } else {
-      alert("Compte/caisse supprimé avec succès.");
-      if (typeof loadFinances === 'function') await loadFinances();
-      else if (typeof loadApp === 'function') await loadApp();
-    }
-  }
-
+  // Charge toujours la dernière version des fichiers (évite le cache du navigateur)
+  const versionFichiers = Date.now();
+  ['core.js', 'finances.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
+</script>
+<script>
   // Démarrage : quand tous les scripts sont chargés
   window.addEventListener('load', () => { initFinances(); demarrer(); });
 </script>
