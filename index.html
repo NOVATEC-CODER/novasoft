@@ -125,9 +125,9 @@
         <p id="msg-traiter" class="text-sm hidden mt-3"></p>
       </section>
 
-      <section id="sec-employe" class="carte hidden">
-        <h2 class="font-bold text-lg">Ajouter un employé</h2>
-        <p class="text-sm text-slate-500 mt-1">Pour créer aussi son compte, saisis son email et un mot de passe provisoire. Si le compte existe déjà, laisse le mot de passe vide.</p>
+      <details id="sec-employe" class="carte hidden">
+        <summary class="font-bold text-lg cursor-pointer">Ajouter un employé</summary>
+        <p class="text-sm text-slate-500 mt-2">Pour créer aussi son compte, saisis son email et un mot de passe provisoire. Si le compte existe déjà, laisse le mot de passe vide.</p>
         <form id="form-employe" class="mt-4 space-y-4">
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -174,7 +174,7 @@
           <button class="btn w-full" type="submit">Enregistrer l'employé</button>
           <p id="msg-employe" class="text-sm hidden"></p>
         </form>
-      </section>
+      </details>
     </div>
 
     <!-- ========== Onglet Finances (contenu injecté par finances.js) ========== -->
