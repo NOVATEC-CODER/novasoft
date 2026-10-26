@@ -74,7 +74,8 @@ const MODELE_FINANCES = `
   </section>
 
   <section class="carte">
-    <h2 id="titre-op" class="font-bold text-lg">Enregistrer une opération</h2>
+    <details id="det-op">
+    <summary id="titre-op" class="font-bold text-lg cursor-pointer">Enregistrer une opération</summary>
     <form id="form-fin" class="mt-4 space-y-4">
       <div class="grid grid-cols-2 gap-3">
         <div>
@@ -138,8 +139,9 @@ const MODELE_FINANCES = `
         <button id="btn-fin" class="btn flex-1" type="submit">Enregistrer l'opération</button>
         <button id="btn-op-annuler" class="btn-clair hidden" type="button">Annuler</button>
       </div>
-      <p id="msg-fin" class="text-sm hidden"></p>
     </form>
+    </details>
+    <p id="msg-fin" class="text-sm hidden mt-3"></p>
   </section>
 
   <section class="carte">
@@ -370,6 +372,7 @@ function quitterEditionOperation() {
   $('btn-fin').textContent = 'Enregistrer l\'opération';
   show('btn-op-annuler', false);
   show('aide-justif', false);
+  $('det-op').open = false;
   rendreCaisses();
 }
 
@@ -391,6 +394,7 @@ function modifierOperation(id) {
   show('btn-op-annuler', true);
   show('aide-justif', !!o.justificatif_url);
   clearMsg('msg-fin');
+  $('det-op').open = true;
   $('form-fin').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
