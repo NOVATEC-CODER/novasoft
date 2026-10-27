@@ -242,7 +242,7 @@ $('form-conge').addEventListener('submit', async (e) => {
   msg('msg-conge', 'Demande envoyée. Elle est en attente de validation.', true);
   $('form-conge').reset();
   await loadMesConges();
-  if (me.role === 'admin') await loadATraiter();
+  if (me.role === 'admin') { await loadATraiter(); await chargerAudit(); }
 });
 
 /* ---------- Espace administrateur : demandes de congé ---------- */
@@ -280,6 +280,7 @@ $('liste-traiter').addEventListener('click', async (e) => {
   if (error) { msg('msg-traiter', erreurClaire(error, 'Action impossible.'), false); btn.disabled = false; return; }
   await loadATraiter();
   if (emp) await loadMesConges();
+  await chargerAudit();
 });
 
 /* ---------- Espace administrateur : ajout d'un employé (avec création du compte) ---------- */
@@ -332,6 +333,7 @@ $('form-employe').addEventListener('submit', async (e) => {
   }
   msg('msg-employe', 'Employé enregistré.' + (compteCree ? ' Compte créé : il peut se connecter avec cet email et le mot de passe provisoire.' : '') + avert, !avert);
   $('form-employe').reset();
+  await chargerAudit();
   if (utilisateurId === me.id) await loadApp();
 });
 
@@ -419,6 +421,7 @@ $('form-profil').addEventListener('submit', async (e) => {
   if (error) { msg('msg-profil', erreurClaire(error, 'Le profil n\'a pas pu être enregistré.'), false); return; }
   $('role').textContent = (ROLES[me.role] || me.role) + ' · ' + $('p-nom').value.trim();
   msg('msg-profil', 'Profil enregistré.', true);
+  await chargerAudit();
 });
 
 /* ---------- Mon compte : changer le mot de passe ---------- */
