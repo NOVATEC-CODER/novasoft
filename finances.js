@@ -149,12 +149,6 @@ const MODELE_FINANCES = `
     <div id="liste-fin" class="mt-3 divide-y divide-slate-100"></div>
     <p id="msg-liste-fin" class="text-sm hidden mt-3"></p>
   </section>
-
-  <section id="carte-audit" class="carte hidden">
-    <h2 class="font-bold text-lg">Historique des modifications</h2>
-    <p class="text-sm text-slate-500 mt-1">Les 30 dernières actions sur les opérations et les caisses. Visible des administrateurs uniquement.</p>
-    <div id="liste-audit" class="mt-3 divide-y divide-slate-100"></div>
-  </section>
 `;
 
 /* ---------- Mise en place du module (appelée une fois au chargement de la page) ---------- */
@@ -200,29 +194,104 @@ async function chargerCaisses() {
   rendreCaisses();
 }
 
+/* ---------- Historique (affiché dans la section « Historique des actions », réservée aux administrateurs) ---------- */
+const OBJETS_AUDIT = { finances: 'opération', caisses: 'caisse', employes: 'dossier employé', conges: 'congé', utilisateurs: 'compte', comptes: 'compte', organisations: 'entreprise' };
+const CHAMPS_EMPLOYE = { matricule: 'matricule', prenom: 'prénom', nom: 'nom', poste: 'poste', departement: 'département', type_contrat: 'type de contrat', date_embauche: 'date d\'embauche', telephone: 'téléphone', jours_conges_annuels: 'jours de congés', photo_url: 'photo', dossier_url: 'dossier', utilisateur_id: 'compte rattaché' };
+const CHAMPS_ENTREPRISE = { nom: 'nom', sigle: 'sigle', ifu: 'IFU', rccm: 'RCCM', adresse: 'adresse', telephone: 'téléphone', email: 'email' };
+const VERBES_CONGE = { approuve: 'Congé approuvé', refuse: 'Congé refusé', annule: 'Congé annulé', en_attente: 'Congé remis en attente' };
+
+function champsModifies(avant, apres, libelles) {
+  return Object.keys(libelles)
+    .filter((k) => JSON.stringify(avant[k] ?? null) !== JSON.stringify(apres[k] ?? null))
+    .map((k) => libelles[k]);
+}
+
+function decrireAudit(a, noms) {
+  const avant = a.avant || {};
+  const apres = a.apres || {};
+  const l = a.apres || a.avant || {};
+  let titre = (ACTIONS_AUDIT[a.action] || a.action) + ' · ' + (OBJETS_AUDIT[a.table_nom] || a.table_nom);
+  let detail = '';
+  switch (a.table_nom) {
+    case 'finances':
+      detail = (l.categorie || '') + ' · ' + fcfa(l.montant);
+      if (a.action === 'UPDATE' && Number(avant.montant) !== Number(apres.montant)) detail += ' (avant : ' + fcfa(avant.montant) + ')';
+      break;
+    case 'caisses':
+      detail = l.nom || '';
+      if (a.action === 'UPDATE' && avant.nom !== apres.nom) detail += ' (avant : ' + (avant.nom || '') + ')';
+      break;
+    case 'employes': {
+      detail = ((l.prenom || '') + ' ' + (l.nom || '')).trim() + (l.matricule ? ' (' + l.matricule + ')' : '');
+      if (a.action === 'UPDATE') {
+        const ch = champsModifies(avant, apres, CHAMPS_EMPLOYE);
+        if (ch.length) detail += ' · modifié : ' + ch.join(', ');
+      }
+      break;
+    }
+    case 'conges': {
+      if (a.action === 'INSERT') titre = 'Demande de congé';
+      else if (a.action === 'DELETE') titre = 'Congé supprimé';
+      else if (avant.statut !== apres.statut) titre = VERBES_CONGE[apres.statut] || 'Congé modifié';
+      else titre = 'Congé modifié';
+      const periode = (l.date_debut && l.date_fin) ? ' · du ' + fmtDate(l.date_debut) + ' au ' + fmtDate(l.date_fin) : '';
+      detail = (noms[l.employe_id] || 'Employé') + ' · ' + (TYPES[l.type] || l.type || '') + periode;
+      break;
+    }
+    case 'utilisateurs':
+      if (a.action === 'UPDATE' && avant.role !== apres.role) {
+        titre = 'Changement de rôle';
+        detail = (l.nom || l.email || '') + ' : ' + (ROLES[avant.role] || avant.role) + ' → ' + (ROLES[apres.role] || apres.role);
+      } else if (a.action === 'DELETE') {
+        titre = 'Compte supprimé';
+        detail = l.nom || l.email || '';
+      } else {
+        titre = 'Compte modifié';
+        detail = l.nom || l.email || '';
+      }
+      break;
+    case 'comptes':
+      titre = 'Compte créé';
+      detail = (l.nom || '') + (l.email ? ' (' + l.email + ')' : '') + (l.role ? ' · ' + (ROLES[l.role] || l.role) : '');
+      break;
+    case 'organisations':
+      if (avant.actif !== undefined && avant.actif !== apres.actif) {
+        titre = apres.actif ? 'Entreprise réactivée' : 'Entreprise suspendue';
+        detail = l.nom || '';
+      } else {
+        titre = 'Profil de l\'entreprise modifié';
+        const ch = champsModifies(avant, apres, CHAMPS_ENTREPRISE);
+        detail = ch.length ? 'Modifié : ' + ch.join(', ') : (l.nom || '');
+      }
+      break;
+    default:
+      detail = '';
+  }
+  return { titre: titre, detail: detail };
+}
+
 async function chargerAudit() {
   const estAdmin = !!me && me.role === 'admin';
-  show('carte-audit', estAdmin);
+  show('sec-audit', estAdmin);
   if (!estAdmin) return;
-  const { data, error } = await db.from('journal_audit')
-    .select('id,table_nom,action,avant,apres,cree_le,utilisateurs(nom)')
-    .order('cree_le', { ascending: false })
-    .limit(30);
+  const [journal, liste] = await Promise.all([
+    db.from('journal_audit')
+      .select('id,table_nom,action,avant,apres,cree_le,utilisateurs(nom)')
+      .order('cree_le', { ascending: false })
+      .limit(50),
+    db.from('employes').select('id,prenom,nom')
+  ]);
   const box = $('liste-audit');
-  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(error, 'Historique indisponible pour le moment.')) + '</p>'; return; }
-  if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune action enregistrée pour l\'instant.</p>'; return; }
-  box.innerHTML = data.map((a) => {
-    const objet = a.table_nom === 'caisses' ? 'caisse' : 'opération';
-    const l = a.apres || a.avant || {};
-    let detail = a.table_nom === 'caisses' ? (l.nom || '') : ((l.categorie || '') + ' · ' + fcfa(l.montant));
-    if (a.action === 'UPDATE' && a.avant && a.apres) {
-      if (a.table_nom === 'finances' && Number(a.avant.montant) !== Number(a.apres.montant)) detail += ' (avant : ' + fcfa(a.avant.montant) + ')';
-      if (a.table_nom === 'caisses' && a.avant.nom !== a.apres.nom) detail += ' (avant : ' + (a.avant.nom || '') + ')';
-    }
+  if (journal.error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(journal.error, 'Historique indisponible pour le moment.')) + '</p>'; return; }
+  if (!journal.data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune action enregistrée pour l\'instant.</p>'; return; }
+  const noms = {};
+  (liste.data || []).forEach((e) => { noms[e.id] = (e.prenom + ' ' + e.nom).trim(); });
+  box.innerHTML = journal.data.map((a) => {
+    const d = decrireAudit(a, noms);
     const qui = a.utilisateurs ? a.utilisateurs.nom : 'Système';
     return '<div class="py-3">'
-      + '<p class="text-sm font-semibold">' + esc(ACTIONS_AUDIT[a.action] || a.action) + ' · ' + objet + '</p>'
-      + '<p class="text-sm text-slate-600">' + esc(detail) + '</p>'
+      + '<p class="text-sm font-semibold">' + esc(d.titre) + '</p>'
+      + (d.detail ? '<p class="text-sm text-slate-600">' + esc(d.detail) + '</p>' : '')
       + '<p class="text-xs text-slate-500">' + esc(qui) + ' · ' + new Date(a.cree_le).toLocaleString('fr-FR') + '</p></div>';
   }).join('');
 }
