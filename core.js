@@ -6,6 +6,8 @@
 const SUPABASE_URL = 'https://tnsvcvbrybzelfxxhttn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_R2Jh5Ta4PT2K-3z0MlLtCg_AdXHtXvh';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Nom de la fonction serveur de création de comptes (nom attribué par Supabase au déploiement)
+const FONCTION_CREATION_COMPTE = 'smooth-responder';
 
 /* ---------- Logo : nom du fichier présent dans le dépôt GitHub ---------- */
 const LOGO = 'file_00000000bf78820e9224a8e64b5b79d3.png';
@@ -38,6 +40,23 @@ function show(id, visible) { $(id).classList.toggle('hidden', !visible); }
 
 let me = null;   // utilisateur connecté
 let emp = null;  // son dossier employé
+
+/* ---------- Création de compte : toujours par la fonction serveur « creer-compte » ---------- */
+async function appelerCreationCompte(donnees) {
+  const { data, error } = await db.functions.invoke(FONCTION_CREATION_COMPTE, { body: donnees });
+  if (!error) {
+    if (data && data.utilisateur_id) return { ok: true, id: data.utilisateur_id };
+    return { ok: false, message: 'Création du compte impossible. Réessaie dans un instant.' };
+  }
+  let texte = 'Création du compte impossible. Réessaie dans un instant.';
+  try {
+    if (error.context && typeof error.context.json === 'function') {
+      const d = await error.context.json();
+      if (d && d.erreur) texte = d.erreur;
+    }
+  } catch (e) { /* on garde le message général */ }
+  return { ok: false, message: texte };
+}
 
 /* ---------- Onglets ---------- */
 const TAB_ON = 'flex-1 rounded-xl bg-ocean px-2 py-2 text-[13px] font-semibold text-white';
@@ -254,22 +273,10 @@ $('form-employe').addEventListener('submit', async (e) => {
         msg('msg-employe', 'Aucun compte avec cet email. Saisis un mot de passe provisoire d\'au moins 8 caractères pour le créer.', false);
         return;
       }
-      // L'invitation donne au nouveau compte l'entreprise et le rôle
-      await db.from('invitations').delete().eq('email', email);
-      const inv = await db.from('invitations').insert({ email: email, role: role });
-      if (inv.error) { msg('msg-employe', 'Invitation impossible : ' + inv.error.message, false); return; }
-      // Client séparé : la session de l'administrateur n'est pas touchée
-      const tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'novasoft-creation' }
-      });
-      const r = await tmp.auth.signUp({ email, password: mdp, options: { data: { nom: prenom + ' ' + nom } } });
-      if (r.error || !r.data || !r.data.user) {
-        await db.from('invitations').delete().eq('email', email);
-        const deja = r.error && /already/i.test(r.error.message);
-        msg('msg-employe', deja ? 'Cet email est déjà utilisé par un autre compte.' : 'Création du compte impossible : ' + (r.error ? r.error.message : 'réponse vide'), false);
-        return;
-      }
-      utilisateurId = r.data.user.id;
+      // Le compte est créé par la fonction serveur (jamais par le navigateur)
+      const r = await appelerCreationCompte({ email: email, nom: prenom + ' ' + nom, mot_de_passe: mdp, role: role });
+      if (!r.ok) { msg('msg-employe', r.message, false); return; }
+      utilisateurId = r.id;
       compteCree = true;
     }
   }
@@ -340,22 +347,11 @@ $('form-ent').addEventListener('submit', async (e) => {
     const o = await db.from('organisations').insert({ nom: nom, sigle: sigle }).select('id').single();
     if (o.error) { msg('msg-ent', 'Création de l\'entreprise impossible : ' + o.error.message, false); return; }
     const orgId = o.data.id;
-    await db.from('invitations').delete().eq('email', email);
-    const inv = await db.from('invitations').insert({ email: email, role: 'admin', organisation_id: orgId });
-    if (inv.error) {
+    // Le compte du premier administrateur est créé par la fonction serveur
+    const r = await appelerCreationCompte({ email: email, nom: adminNom, mot_de_passe: mdp, role: 'admin', organisation_id: orgId });
+    if (!r.ok) {
       await db.from('organisations').delete().eq('id', orgId);
-      msg('msg-ent', 'Invitation impossible : ' + inv.error.message, false);
-      return;
-    }
-    const tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'novasoft-creation' }
-    });
-    const r = await tmp.auth.signUp({ email, password: mdp, options: { data: { nom: adminNom } } });
-    if (r.error || !r.data || !r.data.user) {
-      await db.from('invitations').delete().eq('email', email);
-      await db.from('organisations').delete().eq('id', orgId);
-      const deja = r.error && /already/i.test(r.error.message);
-      msg('msg-ent', deja ? 'Cet email est déjà utilisé par un autre compte.' : 'Création du compte impossible : ' + (r.error ? r.error.message : 'réponse vide'), false);
+      msg('msg-ent', r.message, false);
       return;
     }
     msg('msg-ent', 'Entreprise créée. Son administrateur peut se connecter avec cet email et le mot de passe provisoire.', true);
