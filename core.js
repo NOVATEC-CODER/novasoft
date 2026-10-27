@@ -38,6 +38,28 @@ function msg(id, texte, ok) {
 function clearMsg(id) { $(id).className = 'text-sm hidden'; }
 function show(id, visible) { $(id).classList.toggle('hidden', !visible); }
 
+/* ---------- Messages d'erreur compréhensibles (le détail technique reste dans la console du navigateur) ---------- */
+function erreurClaire(error, defaut) {
+  if (error) console.error('[NovaSoft]', defaut || '', error);
+  const texte = String((error && error.message) || '').toLowerCase();
+  const code = error && error.code;
+  const generique = (defaut ? defaut + ' ' : '') + 'Réessaie dans un instant. Si le problème continue, contacte ton administrateur.';
+  if (!error) return generique;
+  if (texte.includes('failed to fetch') || texte.includes('networkerror') || texte.includes('network request failed') || texte.includes('load failed') || texte.includes('failed to send a request')) return 'Connexion impossible. Vérifie ta connexion Internet puis réessaie.';
+  if (texte.includes('rate limit') || texte.includes('too many')) return 'Trop de tentatives. Patiente quelques minutes avant de réessayer.';
+  if (code === '23505' || texte.includes('duplicate')) return 'Cet élément existe déjà.';
+  if (code === '23503' || texte.includes('foreign key')) return 'Action impossible : cet élément est utilisé ailleurs dans NovaSoft.';
+  if (code === '23502') return 'Un champ obligatoire est vide. Vérifie le formulaire.';
+  if (code === '23514') return 'Une valeur saisie n\'est pas acceptée. Vérifie le formulaire.';
+  if (code === '42501' || texte.includes('row-level security') || texte.includes('permission denied')) return 'Cette action n\'est pas autorisée pour ton compte. Si tu penses que c\'est une erreur, contacte ton administrateur.';
+  if (texte.includes('jwt') || texte.includes('session') || texte.includes('not authenticated')) return 'Ta session a expiré. Reconnecte-toi.';
+  if (texte.includes('should be different')) return 'Le nouveau mot de passe doit être différent de l\'ancien.';
+  if (texte.includes('password') && (texte.includes('weak') || texte.includes('at least') || texte.includes('characters'))) return 'Ce mot de passe est trop simple. Choisis-en un plus long, avec des lettres et des chiffres.';
+  if (texte.includes('maximum allowed size') || texte.includes('too large') || texte.includes('payload')) return 'Le fichier est trop volumineux. Choisis un fichier de 10 Mo au maximum.';
+  if (texte.includes('mime type')) return 'Ce type de fichier n\'est pas accepté. Utilise une photo ou un PDF.';
+  return generique;
+}
+
 let me = null;   // utilisateur connecté
 let emp = null;  // son dossier employé
 
@@ -48,7 +70,9 @@ async function appelerCreationCompte(donnees) {
     if (data && data.utilisateur_id) return { ok: true, id: data.utilisateur_id };
     return { ok: false, message: 'Création du compte impossible. Réessaie dans un instant.' };
   }
+  console.error('[NovaSoft] création de compte', error);
   let texte = 'Création du compte impossible. Réessaie dans un instant.';
+  if (error.name === 'FunctionsFetchError' || error.name === 'FunctionsRelayError') texte = 'Connexion impossible. Vérifie ta connexion Internet puis réessaie.';
   try {
     if (error.context && typeof error.context.json === 'function') {
       const d = await error.context.json();
@@ -90,10 +114,11 @@ $('form-login').addEventListener('submit', async (e) => {
       email: $('login-email').value.trim(),
       password: $('login-mdp').value
     });
-    if (error) { msg('msg-login', 'Email ou mot de passe incorrect.', false); return; }
+    if (error) { msg('msg-login', /invalid login/i.test(error.message || '') ? 'Email ou mot de passe incorrect.' : erreurClaire(error, 'Connexion impossible.'), false); return; }
     await loadApp();
   } catch (err) {
-    msg('msg-login', 'Connexion à Supabase impossible. Vérifie l\'adresse du projet dans le fichier.', false);
+    console.error('[NovaSoft] connexion', err);
+    msg('msg-login', 'Connexion impossible pour le moment. Vérifie ta connexion Internet puis réessaie.', false);
   } finally {
     btn.disabled = false;
   }
@@ -110,7 +135,12 @@ async function loadApp() {
   if (!user) { showLogin(); return; }
 
   const { data, error } = await db.from('utilisateurs').select('id,nom,email,role,organisation_id').eq('id', user.id).maybeSingle();
-  if (error || !data) {
+  if (error) {
+    showLogin();
+    msg('msg-login', erreurClaire(error, 'Chargement impossible.'), false);
+    return;
+  }
+  if (!data) {
     await db.auth.signOut();
     showLogin();
     msg('msg-login', 'Ce compte n\'est pas encore enregistré dans NovaSoft.', false);
@@ -183,7 +213,7 @@ async function loadMesConges() {
     .eq('employe_id', emp.id)
     .order('created_at', { ascending: false });
   const box = $('liste-mes');
-  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">Impossible de charger tes demandes.</p>'; return; }
+  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(error, 'Impossible de charger tes demandes.')) + '</p>'; return; }
   if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune demande pour l\'instant.</p>'; return; }
   box.innerHTML = data.map((c) => {
     const [lib, cls] = STATUTS[c.statut] || [c.statut, 'bg-slate-100 text-slate-600'];
@@ -208,7 +238,7 @@ $('form-conge').addEventListener('submit', async (e) => {
     date_fin: fin,
     motif: $('c-motif').value.trim() || null
   });
-  if (error) { msg('msg-conge', 'La demande n\'a pas pu être envoyée : ' + error.message, false); return; }
+  if (error) { msg('msg-conge', erreurClaire(error, 'La demande n\'a pas pu être envoyée.'), false); return; }
   msg('msg-conge', 'Demande envoyée. Elle est en attente de validation.', true);
   $('form-conge').reset();
   await loadMesConges();
@@ -222,7 +252,7 @@ async function loadATraiter() {
     .eq('statut', 'en_attente')
     .order('created_at', { ascending: true });
   const box = $('liste-traiter');
-  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">Impossible de charger les demandes.</p>'; return; }
+  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(error, 'Impossible de charger les demandes.')) + '</p>'; return; }
   if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune demande en attente.</p>'; return; }
   box.innerHTML = data.map((c) => {
     const nom = c.employes ? c.employes.prenom + ' ' + c.employes.nom : 'Employé inconnu';
@@ -247,7 +277,7 @@ $('liste-traiter').addEventListener('click', async (e) => {
     traite_par: me.id,
     traite_le: new Date().toISOString()
   }).eq('id', btn.dataset.id);
-  if (error) { msg('msg-traiter', 'Action impossible : ' + error.message, false); btn.disabled = false; return; }
+  if (error) { msg('msg-traiter', erreurClaire(error, 'Action impossible.'), false); btn.disabled = false; return; }
   await loadATraiter();
   if (emp) await loadMesConges();
 });
@@ -291,14 +321,14 @@ $('form-employe').addEventListener('submit', async (e) => {
   });
   if (error) {
     const doublon = error.message.includes('duplicate');
-    msg('msg-employe', doublon ? 'Ce matricule ou ce compte a déjà un dossier.' : 'Enregistrement impossible : ' + error.message, false);
+    msg('msg-employe', doublon ? 'Ce matricule ou ce compte a déjà un dossier.' : erreurClaire(error, 'L\'employé n\'a pas pu être enregistré.'), false);
     return;
   }
 
   let avert = '';
   if (utilisateurId && !compteCree && role !== 'employe') {
     const u = await db.from('utilisateurs').update({ role: role }).eq('id', utilisateurId);
-    if (u.error) avert = ' Le rôle n\'a pas pu être changé : ' + u.error.message;
+    if (u.error) avert = ' ' + erreurClaire(u.error, 'Le rôle n\'a pas pu être changé.');
   }
   msg('msg-employe', 'Employé enregistré.' + (compteCree ? ' Compte créé : il peut se connecter avec cet email et le mot de passe provisoire.' : '') + avert, !avert);
   $('form-employe').reset();
@@ -309,7 +339,7 @@ $('form-employe').addEventListener('submit', async (e) => {
 async function loadEntreprises() {
   const { data, error } = await db.from('organisations').select('id,nom,sigle,actif,created_at').order('created_at', { ascending: true });
   const box = $('liste-ent');
-  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">Impossible de charger les entreprises.</p>'; return; }
+  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(error, 'Impossible de charger les entreprises.')) + '</p>'; return; }
   if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune entreprise.</p>'; return; }
   box.innerHTML = data.map((o) => '<div class="py-3 flex items-start justify-between gap-3">'
     + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(o.nom) + (o.sigle ? ' (' + esc(o.sigle) + ')' : '') + '</p>'
@@ -328,7 +358,7 @@ $('liste-ent').addEventListener('click', async (e) => {
   if (!window.confirm(question)) return;
   clearMsg('msg-liste-ent');
   const { error } = await db.rpc('definir_actif_organisation', { p_id: btn.dataset.org, p_actif: activer });
-  if (error) { msg('msg-liste-ent', 'Action impossible : ' + error.message, false); return; }
+  if (error) { msg('msg-liste-ent', erreurClaire(error, 'Action impossible.'), false); return; }
   await loadEntreprises();
 });
 
@@ -345,7 +375,7 @@ $('form-ent').addEventListener('submit', async (e) => {
   btn.disabled = true;
   try {
     const o = await db.from('organisations').insert({ nom: nom, sigle: sigle }).select('id').single();
-    if (o.error) { msg('msg-ent', 'Création de l\'entreprise impossible : ' + o.error.message, false); return; }
+    if (o.error) { msg('msg-ent', erreurClaire(o.error, 'L\'entreprise n\'a pas pu être créée.'), false); return; }
     const orgId = o.data.id;
     // Le compte du premier administrateur est créé par la fonction serveur
     const r = await appelerCreationCompte({ email: email, nom: adminNom, mot_de_passe: mdp, role: 'admin', organisation_id: orgId });
@@ -386,7 +416,7 @@ $('form-profil').addEventListener('submit', async (e) => {
     telephone: vide('p-tel'),
     email: vide('p-email')
   }).eq('id', me.organisation_id);
-  if (error) { msg('msg-profil', 'Enregistrement impossible : ' + error.message, false); return; }
+  if (error) { msg('msg-profil', erreurClaire(error, 'Le profil n\'a pas pu être enregistré.'), false); return; }
   $('role').textContent = (ROLES[me.role] || me.role) + ' · ' + $('p-nom').value.trim();
   msg('msg-profil', 'Profil enregistré.', true);
 });
@@ -399,7 +429,7 @@ $('form-mdp').addEventListener('submit', async (e) => {
   if (nouveau.length < 8) { msg('msg-mdp', 'Le mot de passe doit contenir au moins 8 caractères.', false); return; }
   if (nouveau !== $('m-confirm').value) { msg('msg-mdp', 'Les deux mots de passe ne sont pas identiques.', false); return; }
   const { error } = await db.auth.updateUser({ password: nouveau });
-  if (error) { msg('msg-mdp', 'Changement impossible : ' + error.message, false); return; }
+  if (error) { msg('msg-mdp', erreurClaire(error, 'Le mot de passe n\'a pas pu être changé.'), false); return; }
   msg('msg-mdp', 'Mot de passe mis à jour.', true);
   $('form-mdp').reset();
 });
