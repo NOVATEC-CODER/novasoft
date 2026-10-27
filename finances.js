@@ -184,7 +184,7 @@ async function chargerFinances() {
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(1000);
-  if (error) { msg('msg-liste-fin', 'Impossible de charger les opérations : ' + error.message, false); return; }
+  if (error) { msg('msg-liste-fin', erreurClaire(error, 'Impossible de charger les opérations.'), false); return; }
   clearMsg('msg-liste-fin');
   ops = data;
   rendreOperations();
@@ -195,7 +195,7 @@ async function chargerCaisses() {
   const { data, error } = await db.from('v_soldes_caisses')
     .select('id,nom,type,solde_initial,actif,solde,created_at')
     .order('created_at', { ascending: true });
-  if (error) { msg('msg-liste-fin', 'Impossible de charger les caisses : ' + error.message, false); return; }
+  if (error) { msg('msg-liste-fin', erreurClaire(error, 'Impossible de charger les caisses.'), false); return; }
   caisses = data;
   rendreCaisses();
 }
@@ -209,7 +209,7 @@ async function chargerAudit() {
     .order('cree_le', { ascending: false })
     .limit(30);
   const box = $('liste-audit');
-  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">Historique indisponible : ' + esc(error.message) + '</p>'; return; }
+  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(error, 'Historique indisponible pour le moment.')) + '</p>'; return; }
   if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune action enregistrée pour l\'instant.</p>'; return; }
   box.innerHTML = data.map((a) => {
     const objet = a.table_nom === 'caisses' ? 'caisse' : 'opération';
@@ -336,7 +336,7 @@ async function enregistrerCaisse(e) {
   }
   if (resultat.error) {
     const doublon = resultat.error.message.includes('duplicate');
-    msg('msg-caisse', doublon ? 'Une caisse porte déjà ce nom.' : 'Enregistrement impossible : ' + resultat.error.message, false);
+    msg('msg-caisse', doublon ? 'Une caisse porte déjà ce nom.' : erreurClaire(resultat.error, 'La caisse n\'a pas pu être enregistrée.'), false);
     return;
   }
   const modification = !!id;
@@ -357,7 +357,7 @@ async function actionsCaisse(e) {
     const liee = error.code === '23503' || /foreign key/i.test(error.message);
     msg('msg-liste-caisses', liee
       ? 'Suppression impossible : cette caisse contient des opérations. Désactive-la plutôt (Modifier, puis décoche « Caisse active »).'
-      : 'Suppression impossible : ' + error.message, false);
+      : erreurClaire(error, 'La caisse n\'a pas pu être supprimée.'), false);
     return;
   }
   await chargerFinances();
@@ -409,7 +409,7 @@ async function actionsOperation(e) {
     const { data, error } = await db.storage.from('justificatifs').createSignedUrl(btn.dataset.path, 120);
     if (error || !data) {
       if (fenetre) fenetre.close();
-      msg('msg-liste-fin', 'Justificatif introuvable : ' + (error ? error.message : ''), false);
+      msg('msg-liste-fin', erreurClaire(error, 'Le justificatif est introuvable.'), false);
       return;
     }
     if (fenetre) fenetre.location = data.signedUrl; else window.location.href = data.signedUrl;
@@ -417,7 +417,7 @@ async function actionsOperation(e) {
     if (!window.confirm('Supprimer cette opération ? L\'action sera inscrite dans l\'historique.')) return;
     const op = ops.find((o) => o.id === btn.dataset.id);
     const { error } = await db.from('finances').delete().eq('id', btn.dataset.id);
-    if (error) { msg('msg-liste-fin', 'Suppression impossible : ' + error.message, false); return; }
+    if (error) { msg('msg-liste-fin', erreurClaire(error, 'L\'opération n\'a pas pu être supprimée.'), false); return; }
     if (op && op.justificatif_url) await db.storage.from('justificatifs').remove([op.justificatif_url]);
     if (operationEnEdition && operationEnEdition.id === btn.dataset.id) quitterEditionOperation();
     await chargerFinances();
@@ -439,7 +439,7 @@ async function enregistrerOperation(e) {
       if (fichier.size > 10 * 1024 * 1024) { msg('msg-fin', 'Le justificatif dépasse 10 Mo.', false); return; }
       chemin = me.id + '/' + Date.now() + '-' + fichier.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const up = await db.storage.from('justificatifs').upload(chemin, fichier, { contentType: fichier.type || undefined });
-      if (up.error) { msg('msg-fin', 'Envoi du justificatif impossible : ' + up.error.message, false); return; }
+      if (up.error) { msg('msg-fin', erreurClaire(up.error, 'Le justificatif n\'a pas pu être envoyé.'), false); return; }
     }
     const champs = {
       type: $('f-type').value,
@@ -456,7 +456,7 @@ async function enregistrerOperation(e) {
       const { error } = await db.from('finances').update(champs).eq('id', operationEnEdition.id);
       if (error) {
         if (chemin) await db.storage.from('justificatifs').remove([chemin]);
-        msg('msg-fin', 'Modification impossible : ' + error.message, false);
+        msg('msg-fin', erreurClaire(error, 'L\'opération n\'a pas pu être modifiée.'), false);
         return;
       }
       if (chemin && operationEnEdition.justificatif_url) {
@@ -472,7 +472,7 @@ async function enregistrerOperation(e) {
     const { error } = await db.from('finances').insert(champs);
     if (error) {
       if (chemin) await db.storage.from('justificatifs').remove([chemin]);
-      msg('msg-fin', 'Enregistrement impossible : ' + error.message, false);
+      msg('msg-fin', erreurClaire(error, 'L\'opération n\'a pas pu être enregistrée.'), false);
       return;
     }
     const caisseChoisie = $('f-caisse').value;
