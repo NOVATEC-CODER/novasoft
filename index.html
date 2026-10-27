@@ -189,9 +189,9 @@
         <p id="msg-liste-ent" class="text-sm hidden mt-3"></p>
       </section>
 
-      <section class="carte">
-        <h2 class="font-bold text-lg">Nouvelle entreprise</h2>
-        <p class="text-sm text-slate-500 mt-1">Crée l'entreprise et le compte de son premier administrateur.</p>
+      <details id="sec-nouvelle-ent" class="carte">
+        <summary class="font-bold text-lg cursor-pointer">Nouvelle entreprise</summary>
+        <p class="text-sm text-slate-500 mt-2">Crée l'entreprise et le compte de son premier administrateur.</p>
         <form id="form-ent" class="mt-4 space-y-4">
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -218,7 +218,7 @@
           <button id="btn-ent" class="btn w-full" type="submit">Créer l'entreprise</button>
           <p id="msg-ent" class="text-sm hidden"></p>
         </form>
-      </section>
+      </details>
     </div>
 
     <!-- ========== Profil de l'entreprise (administrateurs) ========== -->
