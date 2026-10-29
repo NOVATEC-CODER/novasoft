@@ -146,8 +146,21 @@
             </div>
             <div>
               <label class="etiq" for="e-poste">Poste</label>
-              <input id="e-poste" class="champ">
+              <select id="e-poste" class="champ">
+                <option value="">Choisir…</option>
+                <option>Chargé RH</option>
+                <option>Directeur RH</option>
+                <option>Directeur financier</option>
+                <option>Directeur commercial</option>
+                <option>Responsable marketing</option>
+                <option>Secrétaire général</option>
+                <option value="__autre">Autre</option>
+              </select>
             </div>
+          </div>
+          <div id="ligne-poste-autre" class="hidden">
+            <label class="etiq" for="e-poste-autre">Précisez le poste</label>
+            <input id="e-poste-autre" class="champ">
           </div>
           <div>
             <label class="etiq" for="e-dep">Département</label>
@@ -174,6 +187,12 @@
           <button class="btn w-full" type="submit">Enregistrer l'employé</button>
           <p id="msg-employe" class="text-sm hidden"></p>
         </form>
+      </details>
+
+      <details id="sec-audit-rh" class="carte hidden">
+        <summary class="font-bold text-lg cursor-pointer">Historique RH et comptes</summary>
+        <p class="text-sm text-slate-500 mt-2">Dossiers employés, congés, comptes, rôles et profil de l'entreprise. Visible des administrateurs uniquement.</p>
+        <div id="liste-audit-rh" class="mt-3 divide-y divide-slate-100"></div>
       </details>
     </div>
 
@@ -220,13 +239,6 @@
         </form>
       </details>
     </div>
-
-    <!-- ========== Historique des actions (administrateurs) ========== -->
-    <details id="sec-audit" class="carte hidden">
-      <summary class="font-bold text-lg cursor-pointer">Historique des actions</summary>
-      <p class="text-sm text-slate-500 mt-2">Les 50 dernières actions : opérations, caisses, dossiers employés, congés, comptes et profil de l'entreprise. Visible des administrateurs uniquement.</p>
-      <div id="liste-audit" class="mt-3 divide-y divide-slate-100"></div>
-    </details>
 
     <!-- ========== Profil de l'entreprise (administrateurs) ========== -->
     <details id="sec-profil" class="carte hidden">
