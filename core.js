@@ -284,6 +284,12 @@ $('liste-traiter').addEventListener('click', async (e) => {
 });
 
 /* ---------- Espace administrateur : ajout d'un employé (avec création du compte) ---------- */
+$('e-poste').addEventListener('change', () => {
+  const autre = $('e-poste').value === '__autre';
+  show('ligne-poste-autre', autre);
+  if (!autre) $('e-poste-autre').value = '';
+});
+
 $('form-employe').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearMsg('msg-employe');
@@ -292,6 +298,9 @@ $('form-employe').addEventListener('submit', async (e) => {
   const email = $('e-email').value.trim().toLowerCase();
   const mdp = $('e-mdp').value;
   const role = $('e-role').value;
+  const posteChoisi = $('e-poste').value;
+  const poste = posteChoisi === '__autre' ? $('e-poste-autre').value.trim() : posteChoisi;
+  if (posteChoisi === '__autre' && !poste) { msg('msg-employe', 'Précise le poste, ou choisis-en un dans la liste.', false); return; }
   let utilisateurId = null;
   let compteCree = false;
 
@@ -317,7 +326,7 @@ $('form-employe').addEventListener('submit', async (e) => {
     matricule: $('e-matricule').value.trim(),
     prenom: prenom,
     nom: nom,
-    poste: $('e-poste').value.trim() || null,
+    poste: poste || null,
     departement: $('e-dep').value.trim() || null
   });
   if (error) {
@@ -333,6 +342,7 @@ $('form-employe').addEventListener('submit', async (e) => {
   }
   msg('msg-employe', 'Employé enregistré.' + (compteCree ? ' Compte créé : il peut se connecter avec cet email et le mot de passe provisoire.' : '') + avert, !avert);
   $('form-employe').reset();
+  show('ligne-poste-autre', false);
   await chargerAudit();
   if (utilisateurId === me.id) await loadApp();
 });
