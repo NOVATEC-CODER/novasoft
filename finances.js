@@ -19,15 +19,15 @@ const MODELE_FINANCES = `
       <input id="f-mois" type="month" class="champ !w-auto !py-1.5">
     </div>
     <div class="grid grid-cols-1 gap-3 mt-4">
-      <div class="rounded-xl bg-emerald-50 p-4">
+      <div class="rounded-xl bg-emerald-50 p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
         <p class="text-sm text-emerald-700">Recettes du mois</p>
         <p id="k-rec" class="text-2xl font-extrabold text-lumina-dark mt-1">0 FCFA</p>
       </div>
-      <div class="rounded-xl bg-rose-50 p-4">
+      <div class="rounded-xl bg-rose-50 p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
         <p class="text-sm text-rose-700">Dépenses du mois</p>
         <p id="k-dep" class="text-2xl font-extrabold text-rose-600 mt-1">0 FCFA</p>
       </div>
-      <div class="rounded-xl bg-blue-50 p-4">
+      <div class="rounded-xl bg-blue-50 p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
         <p class="text-sm text-blue-800">Solde du mois</p>
         <p id="k-solde" class="text-2xl font-extrabold text-ocean mt-1">0 FCFA</p>
       </div>
@@ -285,7 +285,7 @@ function afficherAudit(idListe, resultat, noms) {
   box.innerHTML = resultat.data.map((a) => {
     const d = decrireAudit(a, noms);
     const qui = a.utilisateurs ? a.utilisateurs.nom : 'Système';
-    return '<div class="py-3">'
+    return '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60">'
       + '<p class="text-sm font-semibold">' + esc(d.titre) + '</p>'
       + (d.detail ? '<p class="text-sm text-slate-600">' + esc(d.detail) + '</p>' : '')
       + '<p class="text-xs text-slate-500">' + esc(qui) + ' · ' + new Date(a.cree_le).toLocaleString('fr-FR') + '</p></div>';
@@ -315,7 +315,7 @@ function rendreCaisses() {
   if (!caisses.length) {
     box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune caisse. Ajoute-en une ci-dessous.</p>';
   } else {
-    box.innerHTML = caisses.map((c) => '<div class="py-3">'
+    box.innerHTML = caisses.map((c) => '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60">'
       + '<div class="flex items-start justify-between gap-3">'
       + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(c.nom)
       + (c.actif ? '' : ' <span class="text-xs font-normal text-slate-400">(désactivée)</span>') + '</p>'
@@ -357,7 +357,7 @@ function rendreOperations() {
     if (caisse) details.push(esc(caisse.nom));
     if (o.mode_reglement) details.push(esc(MODES[o.mode_reglement] || o.mode_reglement));
     if (o.description) details.push(esc(o.description));
-    return '<div class="py-3 flex items-start justify-between gap-3">'
+    return '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60 flex items-start justify-between gap-3">'
       + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(o.categorie) + '</p>'
       + '<p class="text-xs text-slate-500">' + details.join(' · ') + '</p>'
       + '<div class="mt-1 flex gap-4 text-xs font-semibold">'
