@@ -17,14 +17,24 @@
 <style type="text/tailwindcss">
   @layer components {
     .champ { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 focus:border-ocean; }
-    .btn { @apply rounded-xl bg-ocean px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50; }
-    .btn-clair { @apply rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50; }
+    .btn { @apply rounded-xl bg-ocean px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50; }
+    .btn-clair { @apply rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-200 hover:border-ocean hover:bg-blue-50 hover:text-ocean hover:-translate-y-0.5; }
     .etiq { @apply block text-sm font-medium text-slate-600 mb-1; }
-    .carte { @apply bg-white border border-slate-200 rounded-2xl p-5; }
+    .carte { @apply bg-white border border-slate-200 border-l-4 border-l-ocean rounded-2xl p-5 shadow-sm transition duration-200 hover:shadow-lg hover:-translate-y-0.5; }
+    details.carte { @apply border-l-lumina; }
   }
 </style>
+<style>
+  /* Sections repliables : flèche animée et titre qui change de couleur au survol */
+  summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: .75rem; transition: color .2s; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: ''; flex-shrink: 0; width: .55rem; height: .55rem; margin-right: .3rem; margin-top: -.25rem; border-right: 2.5px solid #10B981; border-bottom: 2.5px solid #10B981; transform: rotate(45deg); transition: transform .25s, margin .25s; }
+  details[open] > summary::after { transform: rotate(-135deg); margin-top: .25rem; }
+  summary:hover { color: #0052CC; }
+  select, input, textarea { transition: border-color .2s, box-shadow .2s; }
+</style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+<body class="bg-gradient-to-b from-blue-50 via-slate-50 to-emerald-50 text-slate-800 min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
 
 <!-- ================= CONNEXION ================= -->
 <div id="vue-login" class="min-h-screen flex items-center justify-center p-6 bg-white">
@@ -50,7 +60,8 @@
 
 <!-- ================= APPLICATION ================= -->
 <div id="vue-app" class="hidden">
-  <header class="bg-white border-b border-slate-200">
+  <header class="bg-white border-b border-slate-200 shadow-sm">
+    <div class="h-1 bg-gradient-to-r from-ocean via-blue-500 to-lumina"></div>
     <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
       <div class="flex items-center gap-2 shrink-0">
         <div class="relative h-[29px] w-[150px] overflow-hidden">
