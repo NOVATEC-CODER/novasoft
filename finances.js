@@ -35,8 +35,8 @@ const MODELE_FINANCES = `
     <p class="text-sm text-slate-500 mt-4">Trésorerie totale : <span id="k-total" class="font-semibold text-slate-700">0 FCFA</span></p>
   </section>
 
-  <section class="carte">
-    <h2 class="font-bold text-lg">Caisses et comptes</h2>
+  <details id="sec-caisses" class="carte" open>
+    <summary class="font-bold text-lg">Caisses et comptes</summary>
     <div id="liste-caisses" class="mt-3 divide-y divide-slate-100"></div>
     <p id="msg-liste-caisses" class="text-sm hidden mt-3"></p>
     <details id="det-caisse" class="mt-4">
@@ -71,7 +71,7 @@ const MODELE_FINANCES = `
         <p id="msg-caisse" class="text-sm hidden"></p>
       </form>
     </details>
-  </section>
+  </details>
 
   <section class="carte">
     <details id="det-op">
@@ -144,11 +144,11 @@ const MODELE_FINANCES = `
     <p id="msg-fin" class="text-sm hidden mt-3"></p>
   </section>
 
-  <section class="carte">
-    <h2 class="font-bold text-lg">Opérations du mois</h2>
+  <details id="sec-operations" class="carte" open>
+    <summary class="font-bold text-lg">Opérations du mois</summary>
     <div id="liste-fin" class="mt-3 divide-y divide-slate-100"></div>
     <p id="msg-liste-fin" class="text-sm hidden mt-3"></p>
-  </section>
+  </details>
   <details id="sec-audit-fin" class="carte hidden">
     <summary class="font-bold text-lg cursor-pointer">Historique des opérations et des caisses</summary>
     <p class="text-sm text-slate-500 mt-2">Les 30 dernières actions sur les opérations et les caisses. Visible des administrateurs uniquement.</p>
