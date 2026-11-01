@@ -20,16 +20,15 @@
     .btn { @apply rounded-xl bg-ocean px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50; }
     .btn-clair { @apply rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-200 hover:border-ocean hover:bg-blue-50 hover:text-ocean hover:-translate-y-0.5; }
     .etiq { @apply block text-sm font-medium text-slate-600 mb-1; }
-    .carte { @apply bg-white border border-slate-200 border-l-4 border-l-ocean rounded-2xl p-5 shadow-sm transition duration-200 hover:shadow-lg hover:-translate-y-0.5; }
-    details.carte { @apply border-l-lumina; }
+    .carte { @apply rounded-2xl p-5 shadow-md transition duration-200 hover:shadow-lg hover:-translate-y-0.5; }
   }
 </style>
 <style>
-  /* Sections repliables : flèche animée et titre qui change de couleur au survol */
-  summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: .75rem; transition: color .2s; }
-  summary::-webkit-details-marker { display: none; }
-  summary::after { content: ''; flex-shrink: 0; width: .55rem; height: .55rem; margin-right: .3rem; margin-top: -.25rem; border-right: 2.5px solid #10B981; border-bottom: 2.5px solid #10B981; transform: rotate(45deg); transition: transform .25s, margin .25s; }
-  details[open] > summary::after { transform: rotate(-135deg); margin-top: .25rem; }
+  /* Cartes : contour gris en dégradé, bien visible pour distinguer chaque carte */
+  .carte { border: 2px solid transparent; background: linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(135deg, #64748b 0%, #cbd5e1 50%, #64748b 100%) border-box; }
+  /* Titres des sections repliables : flèche bleue, titre qui passe au bleu au survol */
+  summary { cursor: pointer; transition: color .2s; }
+  summary::marker { color: #0052CC; }
   summary:hover { color: #0052CC; }
   select, input, textarea { transition: border-color .2s, box-shadow .2s; }
 </style>
@@ -296,7 +295,7 @@
     </details>
 
     <!-- ========== Mon compte ========== -->
-    <details class="carte">
+    <details id="sec-mdp" class="carte">
       <summary class="font-bold text-lg cursor-pointer">Changer mon mot de passe</summary>
       <form id="form-mdp" class="mt-4 space-y-4">
         <div>
@@ -312,7 +311,7 @@
       </form>
     </details>
 
-    <button id="btn-logout" class="btn-clair w-full" type="button">Se déconnecter</button>
+    <button id="btn-logout" class="w-full rounded-xl bg-gradient-to-r from-ocean to-lumina px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:brightness-110 active:translate-y-0" type="button">Se déconnecter</button>
   </main>
 </div>
 
@@ -323,7 +322,7 @@
 </script>
 <script>
   // Démarrage : quand tous les scripts sont chargés
-  window.addEventListener('load', () => { initFinances(); demarrer(); });
+  window.addEventListener('load', () => { initFinances(); memoriserSections(); demarrer(); });
 </script>
 </body>
 </html>
