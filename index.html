@@ -202,6 +202,7 @@
       <details id="sec-audit-rh" class="carte hidden">
         <summary class="font-bold text-lg cursor-pointer">Historique RH et comptes</summary>
         <p class="text-sm text-slate-500 mt-2">Dossiers employés, congés, comptes, rôles et profil de l'entreprise. Visible des administrateurs uniquement.</p>
+        <div class="mt-3"><button type="button" id="exp-audit-rh" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter</button></div>
         <div id="liste-audit-rh" class="mt-3 divide-y divide-slate-100"></div>
       </details>
     </div>
@@ -318,7 +319,7 @@
 <script>
   // Charge toujours la dernière version des fichiers (évite le cache du navigateur)
   const versionFichiers = Date.now();
-  ['core.js', 'finances.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
+  ['core.js', 'finances.js', 'exports.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
 </script>
 <script>
   // Démarrage : quand tous les scripts sont chargés
