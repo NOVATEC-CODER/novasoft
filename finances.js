@@ -33,12 +33,14 @@ const MODELE_FINANCES = `
       </div>
     </div>
     <p class="text-sm text-slate-500 mt-4">Trésorerie totale : <span id="k-total" class="font-semibold text-slate-700">0 FCFA</span></p>
+    <div class="mt-3"><button type="button" id="exp-dash" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter le tableau de bord</button></div>
   </section>
 
   <details id="sec-caisses" class="carte" open>
     <summary class="font-bold text-lg">Caisses et comptes</summary>
     <div id="liste-caisses" class="mt-3 divide-y divide-slate-100"></div>
     <p id="msg-liste-caisses" class="text-sm hidden mt-3"></p>
+    <div class="mt-3"><button type="button" id="exp-caisses" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter les soldes</button></div>
     <details id="det-caisse" class="mt-4">
       <summary id="titre-caisse" class="text-sm font-semibold text-ocean cursor-pointer">Ajouter une caisse ou un compte</summary>
       <form id="form-caisse" class="mt-3 space-y-4">
@@ -146,12 +148,14 @@ const MODELE_FINANCES = `
 
   <details id="sec-operations" class="carte" open>
     <summary class="font-bold text-lg">Opérations du mois</summary>
+    <div class="mt-3"><button type="button" id="exp-ops" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter les opérations du mois</button></div>
     <div id="liste-fin" class="mt-3 divide-y divide-slate-100"></div>
     <p id="msg-liste-fin" class="text-sm hidden mt-3"></p>
   </details>
   <details id="sec-audit-fin" class="carte hidden">
     <summary class="font-bold text-lg cursor-pointer">Historique des opérations et des caisses</summary>
     <p class="text-sm text-slate-500 mt-2">Les 30 dernières actions sur les opérations et les caisses. Visible des administrateurs uniquement.</p>
+    <div class="mt-3"><button type="button" id="exp-audit-fin" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter</button></div>
     <div id="liste-audit-fin" class="mt-3 divide-y divide-slate-100"></div>
   </details>
 `;
@@ -173,6 +177,13 @@ function initFinances() {
   $('liste-fin').addEventListener('click', actionsOperation);
   $('form-fin').addEventListener('submit', enregistrerOperation);
   $('btn-op-annuler').addEventListener('click', quitterEditionOperation);
+
+  // impression, PDF et Excel (module exports.js)
+  $('exp-dash').addEventListener('click', () => ouvrirMenuExport(rapportTableauDeBord()));
+  $('exp-caisses').addEventListener('click', () => ouvrirMenuExport(rapportCaisses()));
+  $('exp-ops').addEventListener('click', () => ouvrirMenuExport(rapportOperations()));
+  $('exp-audit-fin').addEventListener('click', () => exporterAudit('fin'));
+  $('exp-audit-rh').addEventListener('click', () => exporterAudit('rh'));
 }
 
 /* ---------- Chargement ---------- */
@@ -269,14 +280,19 @@ function decrireAudit(a, noms) {
         detail = ch.length ? 'Modifié : ' + ch.join(', ') : (l.nom || '');
       }
       break;
+    case 'export_fin':
+    case 'export_rh':
+      titre = l.format === 'pdf' ? 'Impression / PDF' : 'Export Excel';
+      detail = (l.objet || '') + (l.lignes !== undefined && l.lignes !== null ? ' · ' + l.lignes + ' ligne(s)' : '');
+      break;
     default:
       detail = '';
   }
   return { titre: titre, detail: detail };
 }
 
-const TABLES_AUDIT_FIN = ['finances', 'caisses'];
-const TABLES_AUDIT_RH = ['employes', 'conges', 'utilisateurs', 'comptes', 'organisations'];
+const TABLES_AUDIT_FIN = ['finances', 'caisses', 'export_fin'];
+const TABLES_AUDIT_RH = ['employes', 'conges', 'utilisateurs', 'comptes', 'organisations', 'export_rh'];
 
 function afficherAudit(idListe, resultat, noms) {
   const box = $(idListe);
@@ -323,6 +339,7 @@ function rendreCaisses() {
       + '<p class="shrink-0 text-sm font-bold ' + (Number(c.solde) < 0 ? 'text-rose-600' : 'text-slate-800') + '">' + fcfa(c.solde) + '</p></div>'
       + '<div class="mt-1 flex gap-4 text-xs font-semibold">'
       + '<button type="button" class="text-ocean" data-caisse="edit" data-id="' + esc(c.id) + '">Modifier</button>'
+      + '<button type="button" class="text-ocean" data-caisse="releve" data-id="' + esc(c.id) + '">Relevé</button>'
       + '<button type="button" class="text-rose-600" data-caisse="suppr" data-id="' + esc(c.id) + '">Supprimer</button>'
       + '</div></div>').join('');
   }
@@ -432,6 +449,7 @@ async function actionsCaisse(e) {
   if (!btn) return;
   clearMsg('msg-liste-caisses');
   if (btn.dataset.caisse === 'edit') { modifierCaisse(btn.dataset.id); return; }
+  if (btn.dataset.caisse === 'releve') { exporterReleve(btn.dataset.id); return; }
   const c = caisses.find((x) => x.id === btn.dataset.id);
   if (!window.confirm('Supprimer la caisse « ' + (c ? c.nom : '') + ' » ? Cette action est définitive.')) return;
   const { error } = await db.from('caisses').delete().eq('id', btn.dataset.id);
