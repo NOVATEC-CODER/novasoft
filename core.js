@@ -37,6 +37,26 @@ function msg(id, texte, ok) {
   // un message placé dans une section repliée ouvre cette section, pour qu'il reste visible
   const section = el.closest('details');
   if (section && !section.open) section.open = true;
+  // la confirmation (ou l'erreur) s'affiche aussi en bas de l'écran, où que tu sois dans la page
+  if (id !== 'msg-login') notifier(texte, ok);
+}
+
+/* ---------- Notification visible en bas de l'écran ---------- */
+let minuteurNotif = null;
+function notifier(texte, ok) {
+  let el = $('notif');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'notif';
+    el.setAttribute('role', 'status');
+    document.body.appendChild(el);
+  }
+  el.textContent = texte;
+  el.className = 'pointer-events-none fixed bottom-5 left-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl px-4 py-3 text-center text-sm font-semibold text-white shadow-xl transition-opacity duration-300 '
+    + (ok ? 'bg-gradient-to-r from-emerald-600 to-lumina-dark' : 'bg-rose-600');
+  el.style.opacity = '1';
+  clearTimeout(minuteurNotif);
+  minuteurNotif = setTimeout(() => { el.style.opacity = '0'; }, ok ? 4000 : 7000);
 }
 function clearMsg(id) { $(id).className = 'text-sm hidden'; }
 
@@ -318,6 +338,14 @@ $('form-conge').addEventListener('submit', async (e) => {
   const bouton = $('form-conge').querySelector('button[type="submit"]');
   bouton.disabled = true;
   try {
+    // une demande identique, déjà envoyée et encore valable, n'est pas renvoyée
+    const doublon = await db.from('conges').select('id,statut')
+      .eq('employe_id', emp.id).eq('type', $('c-type').value).eq('date_debut', debut).eq('date_fin', fin)
+      .in('statut', ['en_attente', 'approuve']).limit(1);
+    if (!doublon.error && doublon.data && doublon.data.length) {
+      msg('msg-conge', 'Tu as déjà envoyé cette demande (' + (doublon.data[0].statut === 'approuve' ? 'déjà approuvée' : 'en attente de validation') + '). Tu la retrouves dans « Mes demandes ».', false);
+      return;
+    }
     const { data, error } = await db.from('conges').insert({
       employe_id: emp.id,
       type: $('c-type').value,
@@ -335,7 +363,14 @@ $('form-conge').addEventListener('submit', async (e) => {
     $('form-conge').reset();
     await loadMesConges();
     if (me.role === 'admin') { await loadATraiter(); await chargerAudit(); }
-    msg('msg-conge', texte, ok);
+    if (ok) {
+      clearMsg('msg-conge');
+      $('sec-conge').open = false;
+      notifier(texte, true);
+      $('sec-mes').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      msg('msg-conge', texte, false);
+    }
   } finally {
     bouton.disabled = false;
   }
@@ -365,9 +400,9 @@ async function loadATraiter() {
       + '<label class="etiq mt-2" for="mot-' + id + '">Motif de la décision</label>'
       + '<textarea id="mot-' + id + '" rows="2" class="champ" placeholder="Obligatoire pour refuser ou mettre en attente"></textarea>'
       + '<div class="mt-2 grid grid-cols-3 gap-2">'
-      + '<button type="button" class="btn !px-2 !py-1.5 text-xs !bg-lumina-dark hover:!bg-emerald-700" data-id="' + id + '" data-statut="approuve">Approuver</button>'
-      + '<button type="button" class="btn-clair !px-2 !py-1.5 text-xs" data-id="' + id + '" data-statut="en_attente">Mettre en attente</button>'
-      + '<button type="button" class="btn-clair !px-2 !py-1.5 text-xs !text-rose-600" data-id="' + id + '" data-statut="refuse">Refuser</button>'
+      + '<button type="button" class="btn !px-2 !py-1.5 text-xs !bg-lumina-dark hover:!bg-emerald-700" data-id="' + id + '" data-nom="' + esc(nom) + '" data-statut="approuve">Approuver</button>'
+      + '<button type="button" class="btn-clair !px-2 !py-1.5 text-xs" data-id="' + id + '" data-nom="' + esc(nom) + '" data-statut="en_attente">Mettre en attente</button>'
+      + '<button type="button" class="btn-clair !px-2 !py-1.5 text-xs !text-rose-600" data-id="' + id + '" data-nom="' + esc(nom) + '" data-statut="refuse">Refuser</button>'
       + '</div></div>';
   }).join('');
 }
@@ -387,7 +422,8 @@ $('liste-traiter').addEventListener('click', async (e) => {
     if (champ) champ.focus();
     return;
   }
-  btn.disabled = true;
+  const groupe = btn.parentElement.querySelectorAll('button');
+  groupe.forEach((b) => { b.disabled = true; });
   clearMsg('msg-traiter');
   const { error } = await db.from('conges').update({
     statut: statut,
@@ -395,11 +431,12 @@ $('liste-traiter').addEventListener('click', async (e) => {
     traite_par: me.id,
     traite_le: new Date().toISOString()
   }).eq('id', btn.dataset.id);
-  if (error) { msg('msg-traiter', erreurClaire(error, 'Action impossible.'), false); btn.disabled = false; return; }
+  if (error) { msg('msg-traiter', erreurClaire(error, 'Action impossible.'), false); groupe.forEach((b) => { b.disabled = false; }); return; }
   await loadATraiter();
   if (emp) await loadMesConges();
   await chargerAudit();
-  msg('msg-traiter', statut === 'approuve' ? 'Congé approuvé.' : (statut === 'refuse' ? 'Congé refusé.' : 'Demande mise en attente de justificatif.'), true);
+  const verbe = statut === 'approuve' ? 'approuvé' : (statut === 'refuse' ? 'refusé' : 'mis en attente de justificatif');
+  msg('msg-traiter', 'Congé de ' + (btn.dataset.nom || 'l\'employé') + ' ' + verbe + '.', true);
 });
 
 /* ---------- Espace administrateur : ajout d'un employé (avec création du compte) ---------- */
