@@ -79,6 +79,7 @@ function erreurClaire(error, defaut) {
 
 let me = null;   // utilisateur connecté
 let emp = null;  // son dossier employé
+let entrepriseNom = '';  // nom de son entreprise (utilisé sur les impressions)
 
 /* ---------- Création de compte : toujours par la fonction serveur « creer-compte » ---------- */
 async function appelerCreationCompte(donnees) {
@@ -179,6 +180,7 @@ async function loadApp() {
     msg('msg-login', 'Accès suspendu pour cette entreprise. Contacte NOVATEC.', false);
     return;
   }
+  entrepriseNom = (org.data && org.data.nom) || '';
   $('who').textContent = me.nom;
   $('role').textContent = (ROLES[me.role] || me.role) + (org.data ? ' · ' + org.data.nom : '');
 
@@ -449,6 +451,7 @@ $('form-profil').addEventListener('submit', async (e) => {
     email: vide('p-email')
   }).eq('id', me.organisation_id);
   if (error) { msg('msg-profil', erreurClaire(error, 'Le profil n\'a pas pu être enregistré.'), false); return; }
+  entrepriseNom = $('p-nom').value.trim();
   $('role').textContent = (ROLES[me.role] || me.role) + ' · ' + $('p-nom').value.trim();
   msg('msg-profil', 'Profil enregistré.', true);
   await chargerAudit();
