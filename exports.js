@@ -37,50 +37,84 @@ function editeur() {
   return 'Édité le ' + dateHeure(new Date()) + (me ? ' par ' + me.nom : '');
 }
 
-/* ---------- Impression / PDF : page propre, imprimable ou « Enregistrer au format PDF » ---------- */
-function htmlRapport(r) {
+/* ---------- Impression / PDF : le rapport est affiché dans la page même, et seul lui est imprimé ----------
+   (plus de fenêtre secondaire : fiable sur téléphone, avec « Enregistrer au format PDF ») */
+const CSS_IMPRESSION = '@media screen{#zone-impression{display:none}}'
+  + '@page{size:A4;margin:14mm}'
+  + '@media print{'
+  + 'body>*:not(#zone-impression){display:none!important}'
+  + 'html,body{background:#fff!important;min-height:0!important;height:auto!important;margin:0!important;padding:0!important}'
+  + '#zone-impression{display:block;font-family:Arial,Helvetica,sans-serif;color:#0f172a;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+  + '#zone-impression .top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0052CC;padding-bottom:8px}'
+  + '#zone-impression .logo{height:34px;width:auto;display:block}'
+  + '#zone-impression .ent{text-align:right;font-size:11px;color:#475569}'
+  + '#zone-impression h1{font-size:18px;font-weight:bold;margin:14px 0 2px;color:#0052CC}'
+  + '#zone-impression .sous{margin:0 0 10px;color:#475569}'
+  + '#zone-impression table{width:100%;border-collapse:collapse}'
+  + '#zone-impression th{background:#0052CC;color:#fff;text-align:left;padding:6px;font-size:11px}'
+  + '#zone-impression td{border-bottom:1px solid #e2e8f0;padding:5px 6px;vertical-align:top}'
+  + '#zone-impression th.d,#zone-impression td.d{text-align:right;white-space:nowrap}'
+  + '#zone-impression tbody tr:nth-child(even) td{background:#f8fafc}'
+  + '#zone-impression tr.tot td{font-weight:bold;background:#eff6ff;border-bottom:1px solid #bfdbfe}'
+  + '#zone-impression thead{display:table-header-group}'
+  + '#zone-impression tr{page-break-inside:avoid}'
+  + '#zone-impression .note{margin-top:10px;color:#b45309;font-size:11px}'
+  + '#zone-impression .pied{margin-top:18px;text-align:center;color:#94a3b8;font-size:10px}'
+  + '}';
+
+function corpsRapport(r) {
   const logo = new URL(LOGO, location.href).href;
   const nbCol = r.colonnes.length;
   const entete = r.colonnes.map((c) => '<th class="' + (c.type === 'montant' ? 'd' : '') + '">' + esc(c.titre) + '</th>').join('');
   const corps = r.lignes.map((l) => '<tr>' + l.map((v, i) => '<td class="' + (r.colonnes[i].type === 'montant' ? 'd' : '') + '">' + esc(cellule(r.colonnes[i], v)) + '</td>').join('') + '</tr>').join('');
   const totaux = (r.totaux || []).map((t) => '<tr class="tot"><td colspan="' + Math.max(1, nbCol - 1) + '" class="d">' + esc(t[0]) + '</td><td class="d">' + esc(nombreFr.format(Number(t[1]))) + '</td></tr>').join('');
-  const css = '@page{size:A4;margin:14mm}'
-    + 'body{font-family:Arial,Helvetica,sans-serif;color:#0f172a;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    + '.top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0052CC;padding-bottom:8px}'
-    + '.logo{height:34px}.ent{text-align:right;font-size:11px;color:#475569}'
-    + 'h1{font-size:18px;margin:14px 0 2px;color:#0052CC}.sous{margin:0 0 10px;color:#475569}'
-    + 'table{width:100%;border-collapse:collapse}'
-    + 'th{background:#0052CC;color:#fff;text-align:left;padding:6px;font-size:11px}'
-    + 'td{border-bottom:1px solid #e2e8f0;padding:5px 6px;vertical-align:top}'
-    + 'th.d,td.d{text-align:right;white-space:nowrap}'
-    + 'tbody tr:nth-child(even) td{background:#f8fafc}'
-    + 'tr.tot td{font-weight:bold;background:#eff6ff;border-bottom:1px solid #bfdbfe}'
-    + 'thead{display:table-header-group}tr{page-break-inside:avoid}'
-    + '.note{margin-top:10px;color:#b45309;font-size:11px}'
-    + '.pied{margin-top:18px;text-align:center;color:#94a3b8;font-size:10px}';
-  return '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-    + '<title>' + esc(r.titre) + '</title><style>' + css + '</style></head><body>'
-    + '<div class="top"><img class="logo" src="' + esc(logo) + '" alt="NovaSoft">'
+  return '<div class="top"><img class="logo" src="' + esc(logo) + '" alt="NovaSoft">'
     + '<div class="ent"><b>' + esc(entrepriseNom || '') + '</b><br>' + esc(editeur()) + '</div></div>'
     + '<h1>' + esc(r.titre) + '</h1>' + (r.sousTitre ? '<p class="sous">' + esc(r.sousTitre) + '</p>' : '')
     + '<table><thead><tr>' + entete + '</tr></thead><tbody>' + corps + totaux + '</tbody></table>'
     + (r.note ? '<p class="note">' + esc(r.note) + '</p>' : '')
-    + '<p class="pied">NovaSoft · un service de NOVATEC</p></body></html>';
+    + '<p class="pied">NovaSoft · un service de NOVATEC</p>';
 }
 
 function imprimerRapport(r) {
-  const w = window.open('', '_blank');
-  if (!w) {
-    window.alert('Ton navigateur a bloqué l\'ouverture de la page d\'impression. Autorise les fenêtres pour ce site, puis réessaie.');
-    return false;
-  }
-  w.document.open();
-  w.document.write(htmlRapport(r));
-  w.document.close();
+  // nettoyage d'une éventuelle impression précédente
+  ['zone-impression', 'style-impression'].forEach((id) => { const e = $(id); if (e) e.remove(); });
+  const style = document.createElement('style');
+  style.id = 'style-impression';
+  style.textContent = CSS_IMPRESSION;
+  const zone = document.createElement('div');
+  zone.id = 'zone-impression';
+  zone.innerHTML = corpsRapport(r);
+  document.head.appendChild(style);
+  document.body.appendChild(zone);
+
+  // le titre de la page devient le nom du fichier PDF proposé
+  const titrePage = document.title;
+  document.title = 'NovaSoft - ' + r.titre + (r.sousTitre ? ' - ' + r.sousTitre : '');
+
+  const nettoyer = () => {
+    window.removeEventListener('afterprint', nettoyer);
+    zone.remove();
+    style.remove();
+    document.title = titrePage;
+  };
+  window.addEventListener('afterprint', nettoyer);
+
+  // on attend que le logo soit chargé avant d'ouvrir la fenêtre d'impression
   let lance = false;
-  const lancer = () => { if (lance) return; lance = true; w.focus(); w.print(); };
-  w.addEventListener('load', lancer);
-  setTimeout(lancer, 1500);
+  const lancer = () => {
+    if (lance) return;
+    lance = true;
+    try { window.print(); } catch (e) { console.error('[NovaSoft] impression', e); nettoyer(); }
+  };
+  const logo = zone.querySelector('img');
+  if (logo && !logo.complete) {
+    logo.addEventListener('load', lancer);
+    logo.addEventListener('error', lancer);
+    setTimeout(lancer, 1500);
+  } else {
+    setTimeout(lancer, 100);
+  }
   return true;
 }
 
