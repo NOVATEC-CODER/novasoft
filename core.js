@@ -504,20 +504,82 @@ $('form-employe').addEventListener('submit', async (e) => {
 });
 
 /* ---------- Entreprises (super-administrateurs) ---------- */
+/* Groupe d'entreprises : société mère, filiales, entreprises liées (un lien n'ouvre aucun accès aux données) */
+let entreprises = [];
+let liensGroupe = {};
+
+function lirePourcentage(valeur) {
+  const n = Number(String(valeur || '').replace(',', '.'));
+  return Number.isFinite(n) && n > 0 && n <= 100 ? n : null;
+}
+
+/* Une filiale est en général détenue à plus de 50 % ; en dessous, c'est une participation : on demande confirmation en cas d'écart */
+function confirmerPourcentage(type, pct) {
+  const txt = String(pct).replace('.', ',');
+  if (type === 'filiale' && pct <= 50) {
+    return window.confirm('Une filiale est en général détenue à plus de 50 %. Pour ' + txt + ' %, le type « Participation » est peut-être plus adapté. Enregistrer quand même comme filiale ?');
+  }
+  if (type === 'participation' && pct > 50) {
+    return window.confirm('Au-delà de 50 %, il s\'agit en général d\'une filiale. Enregistrer quand même comme participation ?');
+  }
+  return true;
+}
+
+function libelleLien(id) {
+  const l = liensGroupe[id];
+  if (!l) return '';
+  const mere = entreprises.find((x) => x.id === l.mere_id);
+  const nom = mere ? mere.nom : 'une autre entreprise';
+  const pct = (l.pourcentage !== null && l.pourcentage !== undefined) ? ' (' + String(Number(l.pourcentage)).replace('.', ',') + ' %)' : '';
+  if (l.type_lien === 'filiale') return 'Filiale de ' + nom + pct;
+  if (l.type_lien === 'participation') return 'Participation de ' + nom + pct;
+  return 'Entreprise liée à ' + nom;
+}
+
+function remplirChoixEntreprises() {
+  const options = (premier) => (premier ? '<option value="">' + premier + '</option>' : '')
+    + entreprises.map((o) => '<option value="' + esc(o.id) + '">' + esc(o.nom) + '</option>').join('');
+  [['n-mere', 'Aucune (société indépendante)'], ['l-org', ''], ['l-mere', 'Aucune (retirer le lien)']].forEach(([id, premier]) => {
+    const el = $(id);
+    const precedent = el.value;
+    el.innerHTML = options(premier);
+    if (precedent && entreprises.some((o) => o.id === precedent)) el.value = precedent;
+  });
+}
+
+async function definirLien(orgId, mereId, type, pct) {
+  const r = await db.rpc('definir_lien_organisation', {
+    p_org: orgId, p_mere: mereId || null, p_type: type, p_pourcentage: type === 'liee' ? null : pct
+  });
+  if (!r.error) return null;
+  if (/circulaire/i.test(r.error.message || '')) return 'Ce lien créerait une boucle entre les entreprises.';
+  return erreurClaire(r.error, 'Le rattachement n\'a pas pu être enregistré.');
+}
+
 async function loadEntreprises() {
   const { data, error } = await db.from('organisations').select('id,nom,sigle,actif,created_at').order('created_at', { ascending: true });
   const box = $('liste-ent');
   if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(error, 'Impossible de charger les entreprises.')) + '</p>'; return; }
+  entreprises = data;
+  liensGroupe = {};
+  const liens = await db.from('liens_organisations').select('organisation_id,mere_id,type_lien,pourcentage');
+  if (liens.error) console.warn('[NovaSoft] liens de groupe indisponibles', liens.error.message);
+  else (liens.data || []).forEach((l) => { liensGroupe[l.organisation_id] = l; });
+  remplirChoixEntreprises();
   if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune entreprise.</p>'; return; }
-  box.innerHTML = data.map((o) => '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60 flex items-start justify-between gap-3">'
-    + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(o.nom) + (o.sigle ? ' (' + esc(o.sigle) + ')' : '') + '</p>'
-    + '<p class="text-xs text-slate-500">Créée le ' + new Date(o.created_at).toLocaleDateString('fr-FR') + '</p></div>'
-    + '<div class="shrink-0 text-right">'
-    + '<span class="px-2.5 py-1 rounded-full text-xs font-semibold ' + (o.actif ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700') + '">' + (o.actif ? 'Active' : 'Suspendue') + '</span>'
-    + (me && o.id === me.organisation_id
-      ? '<span class="block mt-1 text-xs text-slate-400">Ton entreprise</span>'
-      : '<button class="block ml-auto mt-1 text-xs font-semibold ' + (o.actif ? 'text-rose-600' : 'text-ocean') + '" data-org="' + esc(o.id) + '" data-actif="' + (o.actif ? '0' : '1') + '">' + (o.actif ? 'Suspendre' : 'Réactiver') + '</button>')
-    + '</div></div>').join('');
+  box.innerHTML = data.map((o) => {
+    const lien = libelleLien(o.id);
+    return '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60 flex items-start justify-between gap-3">'
+      + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(o.nom) + (o.sigle ? ' (' + esc(o.sigle) + ')' : '') + '</p>'
+      + (lien ? '<p class="text-xs font-semibold text-ocean mt-0.5">' + esc(lien) + '</p>' : '')
+      + '<p class="text-xs text-slate-500">Créée le ' + new Date(o.created_at).toLocaleDateString('fr-FR') + '</p></div>'
+      + '<div class="shrink-0 text-right">'
+      + '<span class="px-2.5 py-1 rounded-full text-xs font-semibold ' + (o.actif ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700') + '">' + (o.actif ? 'Active' : 'Suspendue') + '</span>'
+      + (me && o.id === me.organisation_id
+        ? '<span class="block mt-1 text-xs text-slate-400">Ton entreprise</span>'
+        : '<button class="block ml-auto mt-1 text-xs font-semibold ' + (o.actif ? 'text-rose-600' : 'text-ocean') + '" data-org="' + esc(o.id) + '" data-actif="' + (o.actif ? '0' : '1') + '">' + (o.actif ? 'Suspendre' : 'Réactiver') + '</button>')
+      + '</div></div>';
+  }).join('');
 }
 
 $('liste-ent').addEventListener('click', async (e) => {
@@ -542,6 +604,14 @@ $('form-ent').addEventListener('submit', async (e) => {
   const email = $('n-admin-email').value.trim().toLowerCase();
   const mdp = $('n-admin-mdp').value;
   if (mdp.length < 8) { msg('msg-ent', 'Le mot de passe doit contenir au moins 8 caractères.', false); return; }
+  const mereChoisie = $('n-mere').value;
+  const typeLien = $('n-type-lien').value;
+  const pctLien = lirePourcentage($('n-pct').value);
+  if (mereChoisie && typeLien !== 'liee' && pctLien === null) {
+    msg('msg-ent', 'Indique le pourcentage de détention de la société mère (entre 0,01 et 100).', false);
+    return;
+  }
+  if (mereChoisie && typeLien !== 'liee' && !confirmerPourcentage(typeLien, pctLien)) return;
   const btn = $('btn-ent');
   btn.disabled = true;
   try {
@@ -555,12 +625,53 @@ $('form-ent').addEventListener('submit', async (e) => {
       msg('msg-ent', r.message, false);
       return;
     }
-    msg('msg-ent', 'Entreprise créée. Son administrateur peut se connecter avec cet email et le mot de passe provisoire.', true);
+    let texte = 'Entreprise créée. Son administrateur peut se connecter avec cet email et le mot de passe provisoire.';
+    let ok = true;
+    if (mereChoisie) {
+      const erreurLien = await definirLien(orgId, mereChoisie, typeLien, pctLien);
+      if (erreurLien) { texte += ' Le rattachement au groupe a échoué : ' + erreurLien; ok = false; }
+    }
     $('form-ent').reset();
+    show('ligne-lien', false);
     await loadEntreprises();
+    msg('msg-ent', texte, ok);
   } finally {
     btn.disabled = false;
   }
+});
+
+/* ---------- Relier une entreprise à un groupe ---------- */
+function majChampPct(prefixe) {
+  show(prefixe + '-bloc-pct', $(prefixe === 'n' ? 'n-type-lien' : 'l-type-lien').value !== 'liee');
+}
+$('n-mere').addEventListener('change', () => { show('ligne-lien', !!$('n-mere').value); majChampPct('n'); });
+$('n-type-lien').addEventListener('change', () => majChampPct('n'));
+$('l-type-lien').addEventListener('change', () => majChampPct('l'));
+$('l-org').addEventListener('change', () => {
+  // préremplit avec le lien actuel de l'entreprise choisie
+  const l = liensGroupe[$('l-org').value];
+  $('l-mere').value = l ? l.mere_id : '';
+  $('l-type-lien').value = l ? l.type_lien : 'filiale';
+  $('l-pct').value = (l && l.pourcentage !== null && l.pourcentage !== undefined) ? String(Number(l.pourcentage)).replace('.', ',') : '';
+  majChampPct('l');
+});
+
+$('form-lien').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMsg('msg-lien');
+  const orgId = $('l-org').value;
+  const mereId = $('l-mere').value;
+  const type = $('l-type-lien').value;
+  const pct = lirePourcentage($('l-pct').value);
+  if (!orgId) { msg('msg-lien', 'Choisis l\'entreprise à relier.', false); return; }
+  if (mereId && mereId === orgId) { msg('msg-lien', 'Une entreprise ne peut pas être sa propre société mère.', false); return; }
+  if (mereId && type !== 'liee' && pct === null) { msg('msg-lien', 'Indique le pourcentage de détention de la société mère (entre 0,01 et 100).', false); return; }
+  if (mereId && type !== 'liee' && !confirmerPourcentage(type, pct)) return;
+  if (!mereId && !window.confirm('Retirer le lien de cette entreprise avec son groupe ?')) return;
+  const erreur = await definirLien(orgId, mereId, type, pct);
+  if (erreur) { msg('msg-lien', erreur, false); return; }
+  await loadEntreprises();
+  msg('msg-lien', mereId ? 'Lien enregistré.' : 'Lien retiré.', true);
 });
 
 /* ---------- Profil de l'entreprise ---------- */
