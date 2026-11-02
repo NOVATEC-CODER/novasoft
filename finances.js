@@ -249,9 +249,12 @@ function decrireAudit(a, noms) {
       if (a.action === 'INSERT') titre = 'Demande de congé';
       else if (a.action === 'DELETE') titre = 'Congé supprimé';
       else if (avant.statut !== apres.statut) titre = VERBES_CONGE[apres.statut] || 'Congé modifié';
+      else if (apres.statut === 'en_attente' && apres.motif_decision && avant.motif_decision !== apres.motif_decision) titre = 'Congé mis en attente de justificatif';
+      else if (avant.justificatif_url !== apres.justificatif_url) titre = 'Justificatif de congé joint';
       else titre = 'Congé modifié';
       const periode = (l.date_debut && l.date_fin) ? ' · du ' + fmtDate(l.date_debut) + ' au ' + fmtDate(l.date_fin) : '';
       detail = (noms[l.employe_id] || 'Employé') + ' · ' + (TYPES[l.type] || l.type || '') + periode;
+      if (a.action === 'UPDATE' && apres.motif_decision) detail += ' · Motif : ' + apres.motif_decision;
       break;
     }
     case 'utilisateurs':
