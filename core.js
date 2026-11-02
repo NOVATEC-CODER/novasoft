@@ -225,24 +225,87 @@ function renderDossier() {
   }
 }
 
+/* ---------- Congés : statut affiché et justificatifs ---------- */
+const FORMATS_JUSTIFICATIF = 'application/pdf,image/*,.doc,.docx';
+
+function statutConge(c) {
+  // « En attente » + un motif de l'administrateur = demande mise en attente de justificatif
+  if (c.statut === 'en_attente' && c.motif_decision) return ['En attente de justificatif', 'bg-amber-50 text-amber-700'];
+  return STATUTS[c.statut] || [c.statut, 'bg-slate-100 text-slate-600'];
+}
+
+async function ouvrirJustificatifConge(chemin) {
+  const fenetre = window.open('', '_blank');
+  const { data, error } = await db.storage.from('justificatifs-conges').createSignedUrl(chemin, 120);
+  if (error || !data) {
+    if (fenetre) fenetre.close();
+    window.alert(erreurClaire(error, 'Le justificatif est introuvable.'));
+    return;
+  }
+  if (fenetre) fenetre.location = data.signedUrl; else window.location.href = data.signedUrl;
+}
+
+/* Envoie un justificatif et le rattache à la demande. Retourne null si tout va bien, sinon un message clair. */
+async function envoyerJustificatifConge(congeId, fichier) {
+  if (fichier.size > 10 * 1024 * 1024) return 'Le justificatif dépasse 10 Mo.';
+  const chemin = me.organisation_id + '/' + me.id + '/' + Date.now() + '-' + fichier.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const up = await db.storage.from('justificatifs-conges').upload(chemin, fichier, { contentType: fichier.type || undefined });
+  if (up.error) return erreurClaire(up.error, 'Le justificatif n\'a pas pu être envoyé.');
+  const r = await db.rpc('joindre_justificatif_conge', { p_conge: congeId, p_chemin: chemin });
+  if (r.error) {
+    if (/introuvable/i.test(r.error.message || '')) return 'Cette demande a déjà été traitée : le justificatif ne peut plus être ajouté.';
+    return erreurClaire(r.error, 'Le justificatif n\'a pas pu être joint à la demande.');
+  }
+  return null;
+}
+
 /* ---------- Mes congés ---------- */
 async function loadMesConges() {
   const { data, error } = await db.from('conges')
-    .select('id,type,date_debut,date_fin,motif,statut')
+    .select('id,type,date_debut,date_fin,motif,statut,motif_decision,justificatif_url')
     .eq('employe_id', emp.id)
     .order('created_at', { ascending: false });
   const box = $('liste-mes');
   if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(error, 'Impossible de charger tes demandes.')) + '</p>'; return; }
   if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune demande pour l\'instant.</p>'; return; }
   box.innerHTML = data.map((c) => {
-    const [lib, cls] = STATUTS[c.statut] || [c.statut, 'bg-slate-100 text-slate-600'];
-    return '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60 flex items-start justify-between gap-3">'
+    const [lib, cls] = statutConge(c);
+    const attendJustificatif = c.statut === 'en_attente' && !!c.motif_decision;
+    return '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60">'
+      + '<div class="flex items-start justify-between gap-3">'
       + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(TYPES[c.type] || c.type) + '</p>'
       + '<p class="text-sm text-slate-600">Du ' + fmtDate(c.date_debut) + ' au ' + fmtDate(c.date_fin) + ' (' + nbJours(c.date_debut, c.date_fin) + ' j)</p>'
       + (c.motif ? '<p class="text-xs text-slate-500 mt-0.5">' + esc(c.motif) + '</p>' : '')
-      + '</div><span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ' + cls + '">' + lib + '</span></div>';
+      + (c.motif_decision ? '<p class="text-xs text-slate-700 mt-1"><span class="font-semibold">Réponse de l\'administration :</span> ' + esc(c.motif_decision) + '</p>' : '')
+      + (c.justificatif_url ? '<button type="button" class="mt-1 text-xs font-semibold text-ocean" data-act="voir" data-path="' + esc(c.justificatif_url) + '">Voir mon justificatif</button>' : '')
+      + '</div><span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ' + cls + '">' + lib + '</span></div>'
+      + (attendJustificatif
+        ? '<div class="mt-2 space-y-2"><input id="jf-' + esc(c.id) + '" type="file" accept="' + FORMATS_JUSTIFICATIF + '" class="champ">'
+          + '<button type="button" class="btn !py-1.5" data-act="joindre" data-id="' + esc(c.id) + '">' + (c.justificatif_url ? 'Remplacer le justificatif' : 'Joindre un justificatif') + '</button></div>'
+        : '')
+      + '</div>';
   }).join('');
 }
+
+$('liste-mes').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  clearMsg('msg-mes');
+  if (btn.dataset.act === 'voir') { await ouvrirJustificatifConge(btn.dataset.path); return; }
+  if (btn.dataset.act === 'joindre') {
+    const champ = $('jf-' + btn.dataset.id);
+    const fichier = champ && champ.files[0];
+    if (!fichier) { msg('msg-mes', 'Choisis d\'abord un fichier.', false); return; }
+    btn.disabled = true;
+    const erreur = await envoyerJustificatifConge(btn.dataset.id, fichier);
+    btn.disabled = false;
+    if (erreur) { msg('msg-mes', erreur, false); return; }
+    await loadMesConges();
+    if (me.role === 'admin') await loadATraiter();
+    await chargerAudit();
+    msg('msg-mes', 'Justificatif envoyé. L\'administrateur peut maintenant le consulter.', true);
+  }
+});
 
 $('form-conge').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -250,24 +313,38 @@ $('form-conge').addEventListener('submit', async (e) => {
   const debut = $('c-debut').value;
   const fin = $('c-fin').value;
   if (fin < debut) { msg('msg-conge', 'La date de fin doit être après la date de début.', false); return; }
-  const { error } = await db.from('conges').insert({
-    employe_id: emp.id,
-    type: $('c-type').value,
-    date_debut: debut,
-    date_fin: fin,
-    motif: $('c-motif').value.trim() || null
-  });
-  if (error) { msg('msg-conge', erreurClaire(error, 'La demande n\'a pas pu être envoyée.'), false); return; }
-  msg('msg-conge', 'Demande envoyée. Elle est en attente de validation.', true);
-  $('form-conge').reset();
-  await loadMesConges();
-  if (me.role === 'admin') { await loadATraiter(); await chargerAudit(); }
+  const fichier = $('c-fichier').files[0];
+  if (fichier && fichier.size > 10 * 1024 * 1024) { msg('msg-conge', 'Le justificatif dépasse 10 Mo.', false); return; }
+  const bouton = $('form-conge').querySelector('button[type="submit"]');
+  bouton.disabled = true;
+  try {
+    const { data, error } = await db.from('conges').insert({
+      employe_id: emp.id,
+      type: $('c-type').value,
+      date_debut: debut,
+      date_fin: fin,
+      motif: $('c-motif').value.trim() || null
+    }).select('id').single();
+    if (error) { msg('msg-conge', erreurClaire(error, 'La demande n\'a pas pu être envoyée.'), false); return; }
+    let texte = 'Demande envoyée. Elle est en attente de validation.';
+    let ok = true;
+    if (fichier) {
+      const erreur = await envoyerJustificatifConge(data.id, fichier);
+      if (erreur) { texte = 'Demande envoyée, mais le justificatif n\'a pas pu être joint : ' + erreur; ok = false; }
+    }
+    $('form-conge').reset();
+    await loadMesConges();
+    if (me.role === 'admin') { await loadATraiter(); await chargerAudit(); }
+    msg('msg-conge', texte, ok);
+  } finally {
+    bouton.disabled = false;
+  }
 });
 
-/* ---------- Espace administrateur : demandes de congé ---------- */
+/* ---------- Espace administrateur : demandes de congé (approuver, refuser, mettre en attente) ---------- */
 async function loadATraiter() {
   const { data, error } = await db.from('conges')
-    .select('id,type,date_debut,date_fin,motif,employes(nom,prenom)')
+    .select('id,type,date_debut,date_fin,motif,motif_decision,justificatif_url,employes(nom,prenom)')
     .eq('statut', 'en_attente')
     .order('created_at', { ascending: true });
   const box = $('liste-traiter');
@@ -275,24 +352,46 @@ async function loadATraiter() {
   if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune demande en attente.</p>'; return; }
   box.innerHTML = data.map((c) => {
     const nom = c.employes ? c.employes.prenom + ' ' + c.employes.nom : 'Employé inconnu';
+    const id = esc(c.id);
     return '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60">'
-      + '<p class="text-sm font-semibold">' + esc(nom) + ' · ' + esc(TYPES[c.type] || c.type) + '</p>'
+      + '<p class="text-sm font-semibold">' + esc(nom) + ' · ' + esc(TYPES[c.type] || c.type)
+      + (c.motif_decision ? ' <span class="ml-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700">En attente de justificatif</span>' : '') + '</p>'
       + '<p class="text-sm text-slate-600">Du ' + fmtDate(c.date_debut) + ' au ' + fmtDate(c.date_fin) + ' (' + nbJours(c.date_debut, c.date_fin) + ' j)</p>'
-      + (c.motif ? '<p class="text-xs text-slate-500 mt-0.5">' + esc(c.motif) + '</p>' : '')
-      + '<div class="mt-2 flex gap-2">'
-      + '<button class="btn !py-1.5 !bg-lumina-dark hover:!bg-emerald-700" data-id="' + esc(c.id) + '" data-statut="approuve">Approuver</button>'
-      + '<button class="btn-clair !py-1.5" data-id="' + esc(c.id) + '" data-statut="refuse">Refuser</button>'
+      + (c.motif ? '<p class="text-xs text-slate-500 mt-0.5">Motif du demandeur : ' + esc(c.motif) + '</p>' : '')
+      + (c.motif_decision ? '<p class="text-xs text-slate-700 mt-1"><span class="font-semibold">Ta dernière réponse :</span> ' + esc(c.motif_decision) + '</p>' : '')
+      + (c.justificatif_url
+        ? '<button type="button" class="mt-1 text-xs font-semibold text-ocean" data-act="voir" data-path="' + esc(c.justificatif_url) + '">Voir le justificatif du demandeur</button>'
+        : '<p class="text-xs text-slate-400 mt-1">Aucun justificatif joint.</p>')
+      + '<label class="etiq mt-2" for="mot-' + id + '">Motif de la décision</label>'
+      + '<textarea id="mot-' + id + '" rows="2" class="champ" placeholder="Obligatoire pour refuser ou mettre en attente"></textarea>'
+      + '<div class="mt-2 grid grid-cols-3 gap-2">'
+      + '<button type="button" class="btn !px-2 !py-1.5 text-xs !bg-lumina-dark hover:!bg-emerald-700" data-id="' + id + '" data-statut="approuve">Approuver</button>'
+      + '<button type="button" class="btn-clair !px-2 !py-1.5 text-xs" data-id="' + id + '" data-statut="en_attente">Mettre en attente</button>'
+      + '<button type="button" class="btn-clair !px-2 !py-1.5 text-xs !text-rose-600" data-id="' + id + '" data-statut="refuse">Refuser</button>'
       + '</div></div>';
   }).join('');
 }
 
 $('liste-traiter').addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-id]');
+  const voir = e.target.closest('button[data-act="voir"]');
+  if (voir) { await ouvrirJustificatifConge(voir.dataset.path); return; }
+  const btn = e.target.closest('button[data-statut]');
   if (!btn) return;
+  const statut = btn.dataset.statut;
+  const champ = $('mot-' + btn.dataset.id);
+  const motif = champ ? champ.value.trim() : '';
+  if ((statut === 'refuse' || statut === 'en_attente') && motif.length < 3) {
+    msg('msg-traiter', statut === 'refuse'
+      ? 'Écris le motif du refus avant de refuser.'
+      : 'Écris ce que tu attends du demandeur (par exemple : un certificat médical) avant de mettre en attente.', false);
+    if (champ) champ.focus();
+    return;
+  }
   btn.disabled = true;
   clearMsg('msg-traiter');
   const { error } = await db.from('conges').update({
-    statut: btn.dataset.statut,
+    statut: statut,
+    motif_decision: motif || null,
     traite_par: me.id,
     traite_le: new Date().toISOString()
   }).eq('id', btn.dataset.id);
@@ -300,6 +399,7 @@ $('liste-traiter').addEventListener('click', async (e) => {
   await loadATraiter();
   if (emp) await loadMesConges();
   await chargerAudit();
+  msg('msg-traiter', statut === 'approuve' ? 'Congé approuvé.' : (statut === 'refuse' ? 'Congé refusé.' : 'Demande mise en attente de justificatif.'), true);
 });
 
 /* ---------- Espace administrateur : ajout d'un employé (avec création du compte) ---------- */
