@@ -211,7 +211,7 @@ async function chargerCaisses() {
 }
 
 /* ---------- Historiques (réservés aux administrateurs) : opérations et caisses dans l'onglet Finances, RH et comptes dans l'onglet RH ---------- */
-const OBJETS_AUDIT = { finances: 'opération', caisses: 'caisse', employes: 'dossier employé', conges: 'congé', utilisateurs: 'compte', comptes: 'compte', organisations: 'entreprise' };
+const OBJETS_AUDIT = { liens_entreprises: 'lien de groupe', finances: 'opération', caisses: 'caisse', employes: 'dossier employé', conges: 'congé', utilisateurs: 'compte', comptes: 'compte', organisations: 'entreprise' };
 const CHAMPS_EMPLOYE = { matricule: 'matricule', prenom: 'prénom', nom: 'nom', poste: 'poste', departement: 'département', type_contrat: 'type de contrat', date_embauche: 'date d\'embauche', telephone: 'téléphone', jours_conges_annuels: 'jours de congés', photo_url: 'photo', dossier_url: 'dossier', utilisateur_id: 'compte rattaché' };
 const CHAMPS_ENTREPRISE = { nom: 'nom', sigle: 'sigle', ifu: 'IFU', rccm: 'RCCM', adresse: 'adresse', telephone: 'téléphone', email: 'email' };
 const VERBES_CONGE = { approuve: 'Congé approuvé', refuse: 'Congé refusé', annule: 'Congé annulé', en_attente: 'Congé remis en attente' };
@@ -283,6 +283,11 @@ function decrireAudit(a, noms) {
         detail = ch.length ? 'Modifié : ' + ch.join(', ') : (l.nom || '');
       }
       break;
+    case 'liens_entreprises':
+      titre = a.action === 'DELETE' ? 'Lien de groupe retiré' : 'Lien de groupe défini';
+      detail = ({ filiale: 'Filiale', participation: 'Participation' }[l.type_lien] || 'Entreprise liée') + (l.mere ? ' de ' + l.mere : '')
+        + (l.pourcentage !== null && l.pourcentage !== undefined ? ' (' + String(Number(l.pourcentage)).replace('.', ',') + ' %)' : '');
+      break;
     case 'export_fin':
     case 'export_rh':
       titre = l.format === 'pdf' ? 'Impression / PDF' : 'Export Excel';
@@ -295,7 +300,7 @@ function decrireAudit(a, noms) {
 }
 
 const TABLES_AUDIT_FIN = ['finances', 'caisses', 'export_fin'];
-const TABLES_AUDIT_RH = ['employes', 'conges', 'utilisateurs', 'comptes', 'organisations', 'export_rh'];
+const TABLES_AUDIT_RH = ['employes', 'conges', 'utilisateurs', 'comptes', 'organisations', 'liens_entreprises', 'export_rh'];
 
 function afficherAudit(idListe, resultat, noms) {
   const box = $(idListe);
