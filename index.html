@@ -119,6 +119,10 @@
             <label class="etiq" for="c-motif">Motif (facultatif)</label>
             <textarea id="c-motif" rows="2" class="champ"></textarea>
           </div>
+          <div>
+            <label class="etiq" for="c-fichier">Justificatif (facultatif : PDF, photo ou document)</label>
+            <input id="c-fichier" type="file" accept="application/pdf,image/*,.doc,.docx" class="champ">
+          </div>
           <button class="btn w-full" type="submit">Envoyer la demande</button>
           <p id="msg-conge" class="text-sm hidden"></p>
         </form>
@@ -127,6 +131,7 @@
       <section id="sec-mes" class="carte hidden">
         <h2 class="font-bold text-lg">Mes demandes</h2>
         <div id="liste-mes" class="mt-3 divide-y divide-slate-100"></div>
+        <p id="msg-mes" class="text-sm hidden mt-3"></p>
       </section>
 
       <section id="sec-traiter" class="carte hidden">
