@@ -9,375 +9,370 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-  tailwind.config = { theme: { extend: { colors: {
-    ocean: '#0052CC',
-    lumina: { DEFAULT: '#10B981', dark: '#059669' }
-  } } } };
+ tailwind.config = { theme: { extend: { colors: {
+ ocean: '#0052CC',
+ lumina: { DEFAULT: '#10B981', dark: '#059669' }
+ } } } };
 </script>
 <style type="text/tailwindcss">
-  @layer components {
-    .champ { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 focus:border-ocean; }
-    .btn { @apply rounded-xl bg-ocean px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50; }
-    .btn-clair { @apply rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-200 hover:border-ocean hover:bg-blue-50 hover:text-ocean hover:-translate-y-0.5; }
-    .etiq { @apply block text-sm font-medium text-slate-600 mb-1; }
-    .carte { @apply rounded-2xl p-5 shadow-md transition duration-200 hover:shadow-lg hover:-translate-y-0.5; }
-  }
+ @layer components {
+ .champ { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 focus:border-ocean; }
+ .btn { @apply rounded-xl bg-ocean px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50; }
+ .btn-clair { @apply rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-200 hover:border-ocean hover:bg-blue-50 hover:text-ocean hover:-translate-y-0.5; }
+ .etiq { @apply block text-sm font-medium text-slate-600 mb-1; }
+ .carte { @apply rounded-2xl p-5 shadow-md transition duration-200 hover:shadow-lg hover:-translate-y-0.5; }
+ }
 </style>
 <style>
-  /* Cartes : contour gris en dégradé, bien visible pour distinguer chaque carte */
-  .carte { border: 2px solid transparent; background: linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(135deg, #64748b 0%, #cbd5e1 50%, #64748b 100%) border-box; }
-  /* Titres des sections repliables : flèche bleue, titre qui passe au bleu au survol */
-  summary { cursor: pointer; transition: color .2s; }
-  summary::marker { color: #0052CC; }
-  summary:hover { color: #0052CC; }
-  select, input, textarea { transition: border-color .2s, box-shadow .2s; }
+ /* Cartes : contour gris en dégradé, bien visible pour distinguer chaque carte */
+ .carte { border: 2px solid transparent; background: linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(135deg, #64748b 0%, #cbd5e1 50%, #64748b 100%) border-box; }
+ /* Titres des sections repliables : flèche bleue, titre qui passe au bleu au survol */
+ summary { cursor: pointer; transition: color .2s; }
+ summary::marker { color: #0052CC; }
+ summary:hover { color: #0052CC; }
+ select, input, textarea { transition: border-color .2s, box-shadow .2s; }
 </style>
 </head>
 <body class="bg-gradient-to-b from-blue-50 via-slate-50 to-emerald-50 text-slate-800 min-h-screen" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
-
-<!-- ================= CONNEXION ================= -->
-<div id="vue-login" class="min-h-screen flex items-center justify-center p-6 bg-white">
-  <div class="w-full max-w-sm">
-    <img data-logo alt="NovaSoft, un service de NOVATEC" width="900" height="450" class="block w-full h-auto mx-auto -my-6" onerror="this.style.display='none';document.getElementById('logo-texte').classList.remove('hidden')">
-    <h1 id="logo-texte" class="hidden text-3xl font-extrabold tracking-wide text-center"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></h1>
-    <p class="text-center mt-1"><span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">Version 1.0</span></p>
-
-    <form id="form-login" class="carte mt-8 space-y-4">
-      <div>
-        <label class="etiq" for="login-email">Adresse email</label>
-        <input id="login-email" type="email" autocomplete="email" required class="champ">
-      </div>
-      <div>
-        <label class="etiq" for="login-mdp">Mot de passe</label>
-        <input id="login-mdp" type="password" autocomplete="current-password" required class="champ">
-      </div>
-      <button id="btn-login" class="btn w-full" type="submit">Se connecter</button>
-      <p id="msg-login" class="text-sm hidden"></p>
-    </form>
-  </div>
+<!-- ================= CHARGEMENT (évite d'afficher la page de connexion pendant l'ouverture de la session) ================= -->
+<div id="vue-chargement" class="min-h-screen flex flex-col items-center justify-center gap-3 p-6 bg-white">
+ <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-ocean"></div>
+ <p id="texte-chargement" class="text-sm text-slate-500 text-center">Chargement…</p>
 </div>
-
+<!-- ================= CONNEXION ================= -->
+<div id="vue-login" class="hidden min-h-screen flex items-center justify-center p-6 bg-white">
+ <div class="w-full max-w-sm">
+ <img data-logo alt="NovaSoft, un service de NOVATEC" width="900" height="450" class="block w-full h-auto mx-auto -my-6" onerror="this.style.display='none';document.getElementById('logo-texte').classList.remove('hidden')">
+ <h1 id="logo-texte" class="hidden text-3xl font-extrabold tracking-wide text-center"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></h1>
+ <p class="text-center mt-1"><span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">Version 1.0</span></p>
+ <form id="form-login" class="carte mt-8 space-y-4">
+ <div>
+ <label class="etiq" for="login-email">Adresse email</label>
+ <input id="login-email" type="email" autocomplete="email" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="login-mdp">Mot de passe</label>
+ <input id="login-mdp" type="password" autocomplete="current-password" required class="champ">
+ </div>
+ <button id="btn-login" class="btn w-full" type="submit">Se connecter</button>
+ <p id="msg-login" class="text-sm hidden"></p>
+ </form>
+ </div>
+</div>
 <!-- ================= APPLICATION ================= -->
 <div id="vue-app" class="hidden">
-  <header class="bg-white border-b border-slate-200 shadow-sm">
-    <div class="h-1 bg-gradient-to-r from-ocean via-blue-500 to-lumina"></div>
-    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2 shrink-0">
-        <div class="relative h-[29px] w-[150px] overflow-hidden">
-          <img data-logo alt="NovaSoft" class="absolute max-w-none" style="width:159px;left:-5.6px;top:-17.5px" onerror="this.parentNode.classList.add('hidden');document.getElementById('logo-texte-h').classList.remove('hidden')">
-        </div>
-        <span id="logo-texte-h" class="hidden text-xl font-extrabold tracking-wide"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></span>
-        <span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">1.0</span>
-      </div>
-      <div class="text-right min-w-0">
-        <p id="who" class="text-sm font-semibold truncate"></p>
-        <p id="role" class="text-[11px] text-slate-500 truncate"></p>
-      </div>
-    </div>
-  </header>
-
-  <nav id="onglets" class="hidden max-w-2xl mx-auto px-4 pt-4 flex gap-2">
-    <button id="tab-rh" type="button">RH</button>
-    <button id="tab-fin" type="button">Finances</button>
-    <button id="tab-ent" type="button">Entreprises</button>
-  </nav>
-
-  <main class="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
-    <!-- ========== Onglet RH ========== -->
-    <div id="onglet-rh" class="space-y-6">
-
-      <section id="sec-dossier" class="carte">
-        <h2 class="font-bold text-lg">Mon dossier</h2>
-        <p id="dossier-info" class="text-sm text-slate-600 mt-2"></p>
-      </section>
-
-      <details id="sec-conge" class="carte hidden">
-        <summary class="font-bold text-lg cursor-pointer">Demander un congé</summary>
-        <form id="form-conge" class="mt-4 space-y-4">
-          <div>
-            <label class="etiq" for="c-type">Type de congé</label>
-            <select id="c-type" class="champ">
-              <option value="annuel">Congé annuel</option>
-              <option value="maladie">Maladie</option>
-              <option value="maternite_paternite">Maternité / paternité</option>
-              <option value="sans_solde">Sans solde</option>
-              <option value="autre">Autre</option>
-            </select>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="c-debut">Du</label>
-              <input id="c-debut" type="date" required class="champ">
-            </div>
-            <div>
-              <label class="etiq" for="c-fin">Au</label>
-              <input id="c-fin" type="date" required class="champ">
-            </div>
-          </div>
-          <div>
-            <label class="etiq" for="c-motif">Motif (facultatif)</label>
-            <textarea id="c-motif" rows="2" class="champ"></textarea>
-          </div>
-          <div>
-            <label class="etiq" for="c-fichier">Justificatif (facultatif : PDF, photo ou document)</label>
-            <input id="c-fichier" type="file" accept="application/pdf,image/*,.doc,.docx" class="champ">
-          </div>
-          <button class="btn w-full" type="submit">Envoyer la demande</button>
-          <p id="msg-conge" class="text-sm hidden"></p>
-        </form>
-      </details>
-
-      <section id="sec-mes" class="carte hidden">
-        <h2 class="font-bold text-lg">Mes demandes</h2>
-        <div id="liste-mes" class="mt-3 divide-y divide-slate-100"></div>
-        <p id="msg-mes" class="text-sm hidden mt-3"></p>
-      </section>
-
-      <section id="sec-traiter" class="carte hidden">
-        <h2 class="font-bold text-lg">Demandes à traiter</h2>
-        <div id="liste-traiter" class="mt-3 divide-y divide-slate-100"></div>
-        <p id="msg-traiter" class="text-sm hidden mt-3"></p>
-      </section>
-
-      <details id="sec-employe" class="carte hidden">
-        <summary class="font-bold text-lg cursor-pointer">Ajouter un employé</summary>
-        <p class="text-sm text-slate-500 mt-2">Pour créer aussi son compte, saisis son email et un mot de passe provisoire. Si le compte existe déjà, laisse le mot de passe vide.</p>
-        <form id="form-employe" class="mt-4 space-y-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="e-prenom">Prénom</label>
-              <input id="e-prenom" required class="champ">
-            </div>
-            <div>
-              <label class="etiq" for="e-nom">Nom</label>
-              <input id="e-nom" required class="champ">
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="e-matricule">Matricule</label>
-              <input id="e-matricule" required class="champ">
-            </div>
-            <div>
-              <label class="etiq" for="e-poste">Poste</label>
-              <select id="e-poste" class="champ">
-                <option value="">Choisir…</option>
-                <option>Chargé RH</option>
-                <option>Directeur RH</option>
-                <option>Directeur financier</option>
-                <option>Directeur commercial</option>
-                <option>Responsable marketing</option>
-                <option>Secrétaire général</option>
-                <option value="__autre">Autre</option>
-              </select>
-            </div>
-          </div>
-          <div id="ligne-poste-autre" class="hidden">
-            <label class="etiq" for="e-poste-autre">Précisez le poste</label>
-            <input id="e-poste-autre" class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="e-dep">Département</label>
-            <input id="e-dep" class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="e-email">Email du compte (facultatif)</label>
-            <input id="e-email" type="email" class="champ">
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="e-mdp">Mot de passe provisoire</label>
-              <input id="e-mdp" type="password" autocomplete="new-password" class="champ">
-            </div>
-            <div>
-              <label class="etiq" for="e-role">Rôle</label>
-              <select id="e-role" class="champ">
-                <option value="employe">Employé</option>
-                <option value="comptable">Comptable</option>
-                <option value="admin">Administrateur</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn w-full" type="submit">Enregistrer l'employé</button>
-          <p id="msg-employe" class="text-sm hidden"></p>
-        </form>
-      </details>
-
-      <details id="sec-audit-rh" class="carte hidden">
-        <summary class="font-bold text-lg cursor-pointer">Historique RH et comptes</summary>
-        <p class="text-sm text-slate-500 mt-2">Dossiers employés, congés, comptes, rôles et profil de l'entreprise. Visible des administrateurs uniquement.</p>
-        <div class="mt-3"><button type="button" id="exp-audit-rh" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter</button></div>
-        <div id="liste-audit-rh" class="mt-3 divide-y divide-slate-100"></div>
-      </details>
-    </div>
-
-    <!-- ========== Onglet Finances (contenu injecté par finances.js) ========== -->
-    <div id="onglet-fin" class="hidden space-y-6"></div>
-
-    <!-- ========== Onglet Entreprises (super-administrateurs) ========== -->
-    <div id="onglet-ent" class="hidden space-y-6">
-
-      <section class="carte">
-        <h2 class="font-bold text-lg">Entreprises clientes</h2>
-        <div id="liste-ent" class="mt-3 divide-y divide-slate-100"></div>
-        <p id="msg-liste-ent" class="text-sm hidden mt-3"></p>
-      </section>
-
-      <details id="sec-nouvelle-ent" class="carte">
-        <summary class="font-bold text-lg cursor-pointer">Nouvelle entreprise</summary>
-        <p class="text-sm text-slate-500 mt-2">Crée l'entreprise et le compte de son premier administrateur.</p>
-        <form id="form-ent" class="mt-4 space-y-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="n-nom">Nom de l'entreprise</label>
-              <input id="n-nom" required class="champ">
-            </div>
-            <div>
-              <label class="etiq" for="n-sigle">Sigle</label>
-              <input id="n-sigle" class="champ">
-            </div>
-          </div>
-          <div>
-            <label class="etiq" for="n-mere">Rattachement au groupe (facultatif)</label>
-            <select id="n-mere" class="champ"><option value="">Aucune (société indépendante)</option></select>
-          </div>
-          <div id="ligne-lien" class="hidden grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="n-type-lien">Type de lien</label>
-              <select id="n-type-lien" class="champ">
-                <option value="filiale">Filiale (contrôlée)</option>
-                <option value="participation">Participation (minoritaire)</option>
-                <option value="liee">Entreprise liée (sans contrôle juridique)</option>
-              </select>
-            </div>
-            <div id="n-bloc-pct">
-              <label class="etiq" for="n-pct">Détention de la mère (%)</label>
-              <input id="n-pct" type="text" inputmode="decimal" placeholder="Ex. : 70" class="champ">
-            </div>
-          </div>
-          <div>
-            <label class="etiq" for="n-admin-nom">Nom de l'administrateur</label>
-            <input id="n-admin-nom" required class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="n-admin-email">Email de l'administrateur</label>
-            <input id="n-admin-email" type="email" required class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="n-admin-mdp">Mot de passe provisoire (8 caractères minimum)</label>
-            <input id="n-admin-mdp" type="password" autocomplete="new-password" required minlength="8" class="champ">
-          </div>
-          <button id="btn-ent" class="btn w-full" type="submit">Créer l'entreprise</button>
-          <p id="msg-ent" class="text-sm hidden"></p>
-        </form>
-      </details>
-
-      <details id="sec-liens" class="carte">
-        <summary class="font-bold text-lg cursor-pointer">Relier une entreprise à un groupe</summary>
-        <p class="text-sm text-slate-500 mt-2">Indique la société mère d'une entreprise et le type de lien. Un lien n'ouvre aucun accès aux données : chaque entreprise reste isolée des autres.</p>
-        <form id="form-lien" class="mt-4 space-y-4">
-          <div>
-            <label class="etiq" for="l-org">Entreprise à relier</label>
-            <select id="l-org" class="champ"></select>
-          </div>
-          <div>
-            <label class="etiq" for="l-mere">Société mère</label>
-            <select id="l-mere" class="champ"></select>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="etiq" for="l-type-lien">Type de lien</label>
-              <select id="l-type-lien" class="champ">
-                <option value="filiale">Filiale (contrôlée)</option>
-                <option value="participation">Participation (minoritaire)</option>
-                <option value="liee">Entreprise liée (sans contrôle juridique)</option>
-              </select>
-            </div>
-            <div id="l-bloc-pct">
-              <label class="etiq" for="l-pct">Détention de la mère (%)</label>
-              <input id="l-pct" type="text" inputmode="decimal" placeholder="Ex. : 70" class="champ">
-            </div>
-          </div>
-          <button class="btn w-full" type="submit">Enregistrer le lien</button>
-          <p id="msg-lien" class="text-sm hidden"></p>
-        </form>
-      </details>
-    </div>
-
-    <!-- ========== Profil de l'entreprise (administrateurs) ========== -->
-    <details id="sec-profil" class="carte hidden">
-      <summary class="font-bold text-lg cursor-pointer">Profil de l'entreprise</summary>
-      <p class="text-sm text-slate-500 mt-2">Ces informations apparaîtront sur tes futures factures et documents.</p>
-      <form id="form-profil" class="mt-4 space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="p-nom">Nom</label>
-            <input id="p-nom" required class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="p-sigle">Sigle</label>
-            <input id="p-sigle" class="champ">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="p-ifu">IFU</label>
-            <input id="p-ifu" class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="p-rccm">RCCM</label>
-            <input id="p-rccm" class="champ">
-          </div>
-        </div>
-        <div>
-          <label class="etiq" for="p-adresse">Adresse</label>
-          <input id="p-adresse" class="champ">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="etiq" for="p-tel">Téléphone</label>
-            <input id="p-tel" type="tel" class="champ">
-          </div>
-          <div>
-            <label class="etiq" for="p-email">Email</label>
-            <input id="p-email" type="email" class="champ">
-          </div>
-        </div>
-        <button class="btn w-full" type="submit">Enregistrer le profil</button>
-        <p id="msg-profil" class="text-sm hidden"></p>
-      </form>
-    </details>
-
-    <!-- ========== Mon compte ========== -->
-    <details id="sec-mdp" class="carte">
-      <summary class="font-bold text-lg cursor-pointer">Changer mon mot de passe</summary>
-      <form id="form-mdp" class="mt-4 space-y-4">
-        <div>
-          <label class="etiq" for="m-nouveau">Nouveau mot de passe (12 caractères conseillés)</label>
-          <input id="m-nouveau" type="password" autocomplete="new-password" required minlength="8" class="champ">
-        </div>
-        <div>
-          <label class="etiq" for="m-confirm">Confirmer le mot de passe</label>
-          <input id="m-confirm" type="password" autocomplete="new-password" required class="champ">
-        </div>
-        <button class="btn w-full" type="submit">Mettre à jour</button>
-        <p id="msg-mdp" class="text-sm hidden"></p>
-      </form>
-    </details>
-
-    <button id="btn-logout" class="w-full rounded-xl bg-gradient-to-r from-ocean to-lumina px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:brightness-110 active:translate-y-0" type="button">Se déconnecter</button>
-  </main>
+ <header class="bg-white border-b border-slate-200 shadow-sm">
+ <div class="h-1 bg-gradient-to-r from-ocean via-blue-500 to-lumina"></div>
+ <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+ <div class="flex items-center gap-2 shrink-0">
+ <div class="relative h-[29px] w-[150px] overflow-hidden">
+ <img data-logo alt="NovaSoft" class="absolute max-w-none" style="width:159px;left:-5.6px;top:-17.5px" onerror="this.parentNode.classList.add('hidden');document.getElementById('logo-texte-h').classList.remove('hidden')">
+ </div>
+ <span id="logo-texte-h" class="hidden text-xl font-extrabold tracking-wide"><span class="text-ocean">NOVA</span><span class="text-lumina-dark">SOFT</span></span>
+ <span class="px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">1.0</span>
+ </div>
+ <div class="text-right min-w-0">
+ <p id="who" class="text-sm font-semibold truncate"></p>
+ <p id="role" class="text-[11px] text-slate-500 truncate"></p>
+ </div>
+ </div>
+ </header>
+ <nav id="onglets" class="hidden max-w-2xl mx-auto px-4 pt-4 flex gap-2">
+ <button id="tab-rh" type="button">RH</button>
+ <button id="tab-fin" type="button">Finances</button>
+ <button id="tab-ent" type="button">Entreprises</button>
+ </nav>
+ <main class="max-w-2xl mx-auto px-4 py-6 space-y-6">
+ <!-- ========== Onglet RH ========== -->
+ <div id="onglet-rh" class="space-y-6">
+ <section id="sec-dossier" class="carte">
+ <h2 class="font-bold text-lg">Mon dossier</h2>
+ <p id="dossier-info" class="text-sm text-slate-600 mt-2"></p>
+ </section>
+ <details id="sec-conge" class="carte hidden">
+ <summary class="font-bold text-lg cursor-pointer">Demander un congé</summary>
+ <form id="form-conge" class="mt-4 space-y-4">
+ <div>
+ <label class="etiq" for="c-type">Type de congé</label>
+ <select id="c-type" class="champ">
+ <option value="annuel">Congé annuel</option>
+ <option value="maladie">Maladie</option>
+ <option value="maternite_paternite">Maternité / paternité</option>
+ <option value="sans_solde">Sans solde</option>
+ <option value="autre">Autre</option>
+ </select>
+ </div>
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="c-debut">Du</label>
+ <input id="c-debut" type="date" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="c-fin">Au</label>
+ <input id="c-fin" type="date" required class="champ">
+ </div>
+ </div>
+ <div>
+ <label class="etiq" for="c-motif">Motif (facultatif)</label>
+ <textarea id="c-motif" rows="2" class="champ"></textarea>
+ </div>
+ <div>
+ <label class="etiq" for="c-fichier">Justificatif (facultatif : PDF, photo ou document)</label>
+ <input id="c-fichier" type="file" accept="application/pdf,image/*,.doc,.docx" class="champ">
+ </div>
+ <button class="btn w-full" type="submit">Envoyer la demande</button>
+ <p id="msg-conge" class="text-sm hidden"></p>
+ </form>
+ </details>
+ <details id="sec-mes" class="carte hidden" open>
+ <summary class="font-bold text-lg cursor-pointer">Mes demandes</summary>
+ <div id="liste-mes" class="mt-3 divide-y divide-slate-100"></div>
+ <p id="msg-mes" class="text-sm hidden mt-3"></p>
+ </details>
+ <section id="sec-traiter" class="carte hidden">
+ <h2 class="font-bold text-lg">Demandes à traiter</h2>
+ <div id="liste-traiter" class="mt-3 divide-y divide-slate-100"></div>
+ <p id="msg-traiter" class="text-sm hidden mt-3"></p>
+ </section>
+ <details id="sec-employe" class="carte hidden">
+ <summary class="font-bold text-lg cursor-pointer">Ajouter un employé</summary>
+ <p class="text-sm text-slate-500 mt-2">Pour créer aussi son compte, saisis son email et un mot de passe provisoire. Si le compte existe déjà, laisse le mot de passe vide.</p>
+ <form id="form-employe" class="mt-4 space-y-4">
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="e-prenom">Prénom</label>
+ <input id="e-prenom" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="e-nom">Nom</label>
+ <input id="e-nom" required class="champ">
+ </div>
+ </div>
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="e-matricule">Matricule</label>
+ <input id="e-matricule" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="e-poste">Poste</label>
+ <select id="e-poste" class="champ">
+ <option value="">Choisir…</option>
+ <option>Chargé RH</option>
+ <option>Directeur RH</option>
+ <option>Directeur financier</option>
+ <option>Directeur commercial</option>
+ <option>Responsable marketing</option>
+ <option>Secrétaire général</option>
+ <option value="__autre">Autre</option>
+ </select>
+ </div>
+ </div>
+ <div id="ligne-poste-autre" class="hidden">
+ <label class="etiq" for="e-poste-autre">Précisez le poste</label>
+ <input id="e-poste-autre" class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="e-dep">Département</label>
+ <input id="e-dep" class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="e-email">Email du compte (facultatif)</label>
+ <input id="e-email" type="email" class="champ">
+ </div>
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="e-mdp">Mot de passe provisoire</label>
+ <input id="e-mdp" type="password" autocomplete="new-password" class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="e-role">Rôle</label>
+ <select id="e-role" class="champ">
+ <option value="employe">Employé</option>
+ <option value="comptable">Comptable</option>
+ <option value="admin">Administrateur</option>
+ </select>
+ </div>
+ </div>
+ <button class="btn w-full" type="submit">Enregistrer l'employé</button>
+ <p id="msg-employe" class="text-sm hidden"></p>
+ </form>
+ </details>
+ <details id="sec-audit-rh" class="carte hidden">
+ <summary class="font-bold text-lg cursor-pointer">Historique RH et comptes</summary>
+ <p class="text-sm text-slate-500 mt-2">Dossiers employés, congés, comptes, rôles et profil de l'entreprise. Visible des administrateurs uniquement.</p>
+ <div class="mt-3"><button type="button" id="exp-audit-rh" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter</button></div>
+ <div id="liste-audit-rh" class="mt-3 divide-y divide-slate-100"></div>
+ </details>
+ </div>
+ <!-- ========== Onglet Finances (contenu injecté par finances.js) ========== -->
+ <div id="onglet-fin" class="hidden space-y-6"></div>
+ <!-- ========== Onglet Entreprises (super-administrateurs) ========== -->
+ <div id="onglet-ent" class="hidden space-y-6">
+ <details id="sec-liste-ent" class="carte" open>
+ <summary class="font-bold text-lg cursor-pointer">Entreprises clientes</summary>
+ <div class="mt-3"><button type="button" id="exp-ent" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter la liste</button></div>
+ <div id="liste-ent" class="mt-3 divide-y divide-slate-100"></div>
+ <p id="msg-liste-ent" class="text-sm hidden mt-3"></p>
+ </details>
+ <details id="sec-nouvelle-ent" class="carte">
+ <summary class="font-bold text-lg cursor-pointer">Nouvelle entreprise</summary>
+ <p class="text-sm text-slate-500 mt-2">Crée l'entreprise et le compte de son premier administrateur.</p>
+ <form id="form-ent" class="mt-4 space-y-4">
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="n-nom">Nom de l'entreprise</label>
+ <input id="n-nom" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="n-sigle">Sigle</label>
+ <input id="n-sigle" class="champ">
+ </div>
+ </div>
+ <div>
+ <label class="etiq" for="n-mere">Rattachement au groupe (facultatif)</label>
+ <select id="n-mere" class="champ"><option value="">Aucune (société indépendante)
+</option></select>
+ </div>
+ <div id="ligne-lien" class="hidden grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="n-type-lien">Type de lien</label>
+ <select id="n-type-lien" class="champ">
+ <option value="filiale">Filiale (contrôlée)</option>
+ <option value="participation">Participation (minoritaire)</option>
+ <option value="liee">Entreprise liée (sans contrôle juridique)</option>
+ </select>
+ </div>
+ <div id="n-bloc-pct">
+ <label class="etiq" for="n-pct">Détention de la mère (%)</label>
+ <input id="n-pct" type="text" inputmode="decimal" placeholder="Ex. : 70" class="champ">
+ </div>
+ </div>
+ <div>
+ <label class="etiq" for="n-admin-nom">Nom de l'administrateur</label>
+ <input id="n-admin-nom" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="n-admin-email">Email de l'administrateur</label>
+ <input id="n-admin-email" type="email" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="n-admin-mdp">Mot de passe provisoire (8 caractères minimum)</label>
+ <input id="n-admin-mdp" type="password" autocomplete="new-password" required minlength="8" class="champ">
+ </div>
+ <button id="btn-ent" class="btn w-full" type="submit">Créer l'entreprise</button>
+ <p id="msg-ent" class="text-sm hidden"></p>
+ </form>
+ </details>
+ <details id="sec-liens" class="carte">
+ <summary class="font-bold text-lg cursor-pointer">Relier une entreprise à un groupe</summary>
+ <p class="text-sm text-slate-500 mt-2">Indique la société mère d'une entreprise et le type de lien. Un lien n'ouvre aucun accès aux données : chaque entreprise reste isolée des autres.</p>
+ <form id="form-lien" class="mt-4 space-y-4">
+ <div>
+ <label class="etiq" for="l-org">Entreprise à relier</label>
+ <select id="l-org" class="champ"></select>
+ </div>
+ <div>
+ <label class="etiq" for="l-mere">Société mère</label>
+ <select id="l-mere" class="champ"></select>
+ </div>
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="l-type-lien">Type de lien</label>
+ <select id="l-type-lien" class="champ">
+ <option value="filiale">Filiale (contrôlée)</option>
+ <option value="participation">Participation (minoritaire)</option>
+ <option value="liee">Entreprise liée (sans contrôle juridique)</option>
+ </select>
+ </div>
+ <div id="l-bloc-pct">
+ <label class="etiq" for="l-pct">Détention de la mère (%)</label>
+ <input id="l-pct" type="text" inputmode="decimal" placeholder="Ex. : 70" class="champ">
+ </div>
+ </div>
+ <button class="btn w-full" type="submit">Enregistrer le lien</button>
+ <p id="msg-lien" class="text-sm hidden"></p>
+ </form>
+ </details>
+ </div>
+ <!-- ========== Profil de l'entreprise (administrateurs) ========== -->
+ <details id="sec-profil" class="carte hidden">
+ <summary class="font-bold text-lg cursor-pointer">Profil de l'entreprise</summary>
+ <p class="text-sm text-slate-500 mt-2">Ces informations apparaîtront sur tes futures factures et documents.</p>
+ <div class="mt-3"><button type="button" id="exp-profil" class="btn-clair !py-1.5 text-xs">Imprimer / Exporter la fiche</button></div>
+ <form id="form-profil" class="mt-4 space-y-4">
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="p-nom">Nom</label>
+ <input id="p-nom" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="p-sigle">Sigle</label>
+ <input id="p-sigle" class="champ">
+ </div>
+ </div>
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="p-ifu">IFU</label>
+ <input id="p-ifu" class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="p-rccm">RCCM</label>
+ <input id="p-rccm" class="champ">
+ </div>
+ </div>
+ <div>
+ <label class="etiq" for="p-adresse">Adresse</label>
+ <input id="p-adresse" class="champ">
+ </div>
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="p-tel">Téléphone</label>
+ <input id="p-tel" type="tel" class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="p-email">Email</label>
+ <input id="p-email" type="email" class="champ">
+ </div>
+ </div>
+ <button class="btn w-full" type="submit">Enregistrer le profil</button>
+ <p id="msg-profil" class="text-sm hidden"></p>
+ </form>
+ </details>
+ <!-- ========== Mon compte ========== -->
+ <details id="sec-mdp" class="carte">
+ <summary class="font-bold text-lg cursor-pointer">Changer mon mot de passe</summary>
+ <form id="form-mdp" class="mt-4 space-y-4">
+ <div>
+ <label class="etiq" for="m-nouveau">Nouveau mot de passe (12 caractères conseillés)
+</label>
+ <input id="m-nouveau" type="password" autocomplete="new-password" required minlength="8" class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="m-confirm">Confirmer le mot de passe</label>
+ <input id="m-confirm" type="password" autocomplete="new-password" required class="champ">
+ </div>
+ <button class="btn w-full" type="submit">Mettre à jour</button>
+ <p id="msg-mdp" class="text-sm hidden"></p>
+ </form>
+ </details>
+ <button id="btn-logout" class="w-full rounded-xl bg-gradient-to-r from-ocean to-lumina px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:brightness-110 active:translate-y-0" type="button">Se déconnecter</button>
+ </main>
 </div>
-
 <script>
-  // Charge toujours la dernière version des fichiers (évite le cache du navigateur)
-  const versionFichiers = Date.now();
-  ['core.js', 'finances.js', 'exports.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
+ // Charge toujours la dernière version des fichiers (évite le cache du navigateur)
+ const versionFichiers = Date.now();
+ ['core.js', 'finances.js', 'exports.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
 </script>
 <script>
-  // Démarrage : quand tous les scripts sont chargés
-  window.addEventListener('load', () => { initFinances(); memoriserSections(); demarrer(); });
+ // Si l'application ne démarre pas (connexion coupée, script bloqué), on le dit au lieu de tourner sans fin
+ setTimeout(() => {
+ const c = document.getElementById('vue-chargement');
+ if (c && !c.classList.contains('hidden')) document.getElementById('texte-chargement').textContent = 'Chargement impossible. Vérifie ta connexion Internet puis actualise la page.';
+ }, 20000);
+</script>
+<script>
+ // Démarrage : quand tous les scripts sont chargés
+ window.addEventListener('load', () => { initFinances(); memoriserSections(); demarrer(); });
 </script>
 </body>
 </html>
