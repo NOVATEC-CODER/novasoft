@@ -139,11 +139,14 @@ $('form-login').addEventListener('submit', async (e) => {
  const btn = $('btn-login');
  btn.disabled = true;
  try {
- const { error } = await db.auth.signInWithPassword({
+ const { data: connexion, error } = await db.auth.signInWithPassword({
  email: $('login-email').value.trim(),
  password: $('login-mdp').value
  });
  if (error) { msg('msg-login', /invalid login/i.test(error.message || '') ? 'Email ou mot de passe incorrect.' : erreurClaire(error, 'Connexion impossible.'), false); return; }
+ // connexion par mot de passe réussie : le compteur d'erreurs du code repart à zéro et l'écran n'est pas verrouillé
+ try { await db.rpc('reinitialiser_essais_code'); } catch (e) { /* fonction absente ou réseau : on ignore */ }
+ if (typeof marquerActivite === 'function') marquerActivite(connexion && connexion.user ? connexion.user.id : null);
  await loadApp();
  } catch (err) {
  console.error('[NovaSoft] connexion', err);
@@ -215,6 +218,8 @@ async function loadApp() {
  try { ongletInitial = sessionStorage.getItem('ns-onglet') || 'rh'; } catch (e) { /* stockage indisponible : on ignore */ }
  if (!['rh', 'fin', 'ent'].includes(ongletInitial) || (ongletInitial === 'fin' && !acces.fin) || (ongletInitial === 'ent' && !acces.ent)) ongletInitial = 'rh';
  afficherOnglet(ongletInitial);
+ // verrouillage par code (module verrou.js) : l'écran est couvert avant d'être montré si l'activité est ancienne
+ if (typeof demarrerVerrou === 'function') demarrerVerrou();
  show('vue-chargement', false);
  show('vue-login', false);
  show('vue-app', true);
