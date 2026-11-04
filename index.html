@@ -355,14 +355,57 @@
  <p id="msg-mdp" class="text-sm hidden"></p>
  </form>
  </details>
+ <details id="sec-code" class="carte">
+ <summary class="font-bold text-lg cursor-pointer">Mon code de verrouillage</summary>
+ <p class="text-sm text-slate-500 mt-2">Après une minute sans activité, NovaSoft se verrouille et te demande ce code à 4 chiffres. Ton écran est retrouvé tel que tu l'as laissé.</p>
+ <form id="form-code" class="mt-4 space-y-4">
+ <div>
+ <label class="etiq" for="cd-mdp">Mot de passe actuel</label>
+ <input id="cd-mdp" type="password" autocomplete="current-password" required class="champ">
+ </div>
+ <div class="grid grid-cols-2 gap-3">
+ <div>
+ <label class="etiq" for="cd-code">Nouveau code</label>
+ <input id="cd-code" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="cd-code2">Confirmer le code</label>
+ <input id="cd-code2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" required class="champ">
+ </div>
+ </div>
+ <button class="btn w-full" type="submit">Enregistrer le code</button>
+ <p id="msg-code" class="text-sm hidden"></p>
+ </form>
+ </details>
  <button id="btn-logout" class="w-full rounded-xl bg-gradient-to-r from-ocean to-lumina px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:brightness-110 active:translate-y-0" type="button">Se déconnecter</button>
  </main>
 </div>
 <script>
  // Charge toujours la dernière version des fichiers (évite le cache du navigateur)
  const versionFichiers = Date.now();
- ['core.js', 'finances.js', 'exports.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
+ ['core.js', 'finances.js', 'exports.js', 'verrou.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
 </script>
+<!-- ================= VERROU (code à 4 chiffres, posé par-dessus la page) ================= -->
+<div id="vue-verrou" class="hidden fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-white p-6">
+ <div class="w-full max-w-sm">
+ <img data-logo alt="NovaSoft" width="900" height="450" class="block w-full h-auto mx-auto -my-6" onerror="this.style.display='none'">
+ <h2 id="verrou-titre" class="mt-8 text-center text-xl font-extrabold"></h2>
+ <p id="verrou-texte" class="mt-2 text-center text-sm text-slate-500"></p>
+ <form id="form-verrou" class="carte mt-6 space-y-4">
+ <div>
+ <label class="etiq" for="v-code">Code à 4 chiffres</label>
+ <input id="v-code" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" class="champ text-center text-2xl tracking-[0.5em]">
+ </div>
+ <div id="ligne-v-code2" class="hidden">
+ <label class="etiq" for="v-code2">Confirme le code</label>
+ <input id="v-code2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" class="champ text-center text-2xl tracking-[0.5em]">
+ </div>
+ <button id="btn-verrou" class="btn w-full" type="submit">Déverrouiller</button>
+ <p id="msg-verrou" class="text-sm text-center hidden"></p>
+ </form>
+ <button id="btn-verrou-sortie" type="button" class="mt-4 w-full text-sm font-semibold text-ocean">Code oublié ? Se déconnecter</button>
+ </div>
+</div>
 <script>
  // Si l'application ne démarre pas (connexion coupée, script bloqué), on le dit au lieu de tourner sans fin
  setTimeout(() => {
