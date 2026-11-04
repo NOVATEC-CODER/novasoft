@@ -380,11 +380,6 @@
  <button id="btn-logout" class="w-full rounded-xl bg-gradient-to-r from-ocean to-lumina px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:brightness-110 active:translate-y-0" type="button">Se déconnecter</button>
  </main>
 </div>
-<script>
- // Charge toujours la dernière version des fichiers (évite le cache du navigateur)
- const versionFichiers = Date.now();
- ['core.js', 'finances.js', 'exports.js', 'verrou.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
-</script>
 <!-- ================= VERROU (code à 4 chiffres, posé par-dessus la page) ================= -->
 <div id="vue-verrou" class="hidden fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-white p-6">
  <div class="w-full max-w-sm">
@@ -406,6 +401,11 @@
  <button id="btn-verrou-sortie" type="button" class="mt-4 w-full text-sm font-semibold text-ocean">Code oublié ? Se déconnecter</button>
  </div>
 </div>
+<script>
+ // Charge toujours la dernière version des fichiers (évite le cache du navigateur)
+ const versionFichiers = Date.now();
+ ['core.js', 'finances.js', 'exports.js', 'verrou.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
+</script>
 <script>
  // Si l'application ne démarre pas (connexion coupée, script bloqué), on le dit au lieu de tourner sans fin
  setTimeout(() => {
