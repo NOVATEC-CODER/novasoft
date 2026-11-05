@@ -517,7 +517,7 @@ function libelleLien(id) {
 function remplirChoixEntreprises() {
  const options = (premier) => (premier ? '<option value="">' + premier + '</option>' : '')
  + entreprises.map((o) => '<option value="' + esc(o.id) + '">' + esc(o.nom) + '</option>').join('');
- [['n-mere', 'Aucune (société indépendante)'], ['l-org', ''], ['l-mere', 'Aucune (retirer le lien)']].forEach(([id, premier]) => {
+ [['n-mere', 'Aucune (société indépendante)'], ['l-org', ''], ['a-org', ''], ['l-mere', 'Aucune (retirer le lien)']].forEach(([id, premier]) => {
  const el = $(id);
  const precedent = el.value;
  el.innerHTML = options(premier);
@@ -613,6 +613,30 @@ $('form-ent').addEventListener('submit', async (e) => {
  show('ligne-lien', false);
  await loadEntreprises();
  msg('msg-ent', texte, ok);
+ } finally {
+ btn.disabled = false;
+ }
+});
+/* ---------- Ajouter un administrateur à une entreprise existante (super-administrateurs) ---------- */
+$('form-admin-ent').addEventListener('submit', async (e) => {
+ e.preventDefault();
+ clearMsg('msg-admin-ent');
+ const orgId = $('a-org').value;
+ const nom = $('a-nom').value.trim();
+ const email = $('a-email').value.trim().toLowerCase();
+ const mdp = $('a-mdp').value;
+ if (!orgId) { msg('msg-admin-ent', 'Choisis l\'entreprise.', false); return; }
+ if (mdp.length < 8) { msg('msg-admin-ent', 'Le mot de passe doit contenir au moins 8 caractères.', false); return; }
+ const entreprise = entreprises.find((o) => o.id === orgId);
+ if (!window.confirm('Créer un compte administrateur pour ' + email + ' dans ' + (entreprise ? entreprise.nom : 'cette entreprise') + ' ?')) return;
+ const btn = $('btn-admin-ent');
+ btn.disabled = true;
+ try {
+ // le compte est créé par la fonction serveur (jamais par le navigateur)
+ const r = await appelerCreationCompte({ email: email, nom: nom, mot_de_passe: mdp, role: 'admin', organisation_id: orgId });
+ if (!r.ok) { msg('msg-admin-ent', r.message, false); return; }
+ $('form-admin-ent').reset();
+ msg('msg-admin-ent', 'Compte créé dans ' + (entreprise ? entreprise.nom : 'l\'entreprise') + '. La personne peut se connecter avec cet email et le mot de passe provisoire.', true);
  } finally {
  btn.disabled = false;
  }
