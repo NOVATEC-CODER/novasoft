@@ -263,6 +263,30 @@
  <p id="msg-ent" class="text-sm hidden"></p>
  </form>
  </details>
+ <details id="sec-admin-ent" class="carte">
+ <summary class="font-bold text-lg cursor-pointer">Ajouter un administrateur à une entreprise</summary>
+ <p class="text-sm text-slate-500 mt-2">Crée un compte administrateur supplémentaire dans une entreprise qui existe déjà.</p>
+ <form id="form-admin-ent" class="mt-4 space-y-4">
+ <div>
+ <label class="etiq" for="a-org">Entreprise</label>
+ <select id="a-org" class="champ"></select>
+ </div>
+ <div>
+ <label class="etiq" for="a-nom">Nom de l'administrateur</label>
+ <input id="a-nom" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="a-email">Email de l'administrateur</label>
+ <input id="a-email" type="email" required class="champ">
+ </div>
+ <div>
+ <label class="etiq" for="a-mdp">Mot de passe provisoire (12 caractères conseillés, 8 minimum)</label>
+ <input id="a-mdp" type="password" autocomplete="new-password" required minlength="8" class="champ">
+ </div>
+ <button id="btn-admin-ent" class="btn w-full" type="submit">Créer le compte</button>
+ <p id="msg-admin-ent" class="text-sm hidden"></p>
+ </form>
+ </details>
  <details id="sec-liens" class="carte">
  <summary class="font-bold text-lg cursor-pointer">Relier une entreprise à un groupe</summary>
  <p class="text-sm text-slate-500 mt-2">Indique la société mère d'une entreprise et le type de lien. Un lien n'ouvre aucun accès aux données : chaque entreprise reste isolée des autres.</p>
