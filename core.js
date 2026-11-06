@@ -185,6 +185,8 @@ async function loadApp() {
  }
  const sa = await db.rpc('est_super_admin');
  const estSuper = sa.data === true;
+ // double authentification (module mfa.js) : exigée avant de charger la moindre donnée
+ if (typeof verifierMfa === 'function' && !(await verifierMfa(estSuper))) return;
  const org = await db.from('organisations').select('nom,sigle,ifu,rccm,adresse,telephone,email,actif').eq('id', me.organisation_id).maybeSingle();
  if (!org.data && !estSuper) {
  await db.auth.signOut();
