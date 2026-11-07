@@ -2,12 +2,12 @@
  NovaSoft - module MFA : double authentification (TOTP) par application d'authentification
  À la connexion, l'utilisateur saisit le code à 6 chiffres de son application (Google Authenticator,
  Microsoft Authenticator, Authy...). Le code est vérifié par le service d'authentification, jamais par le navigateur.
- Phase de test : seuls les comptes de la liste MFA_COMPTES_PILOTE (les 3 comptes réels) sont obligés. Pour l'imposer à tous
- les administrateurs, comptables et super-administrateurs, passer MFA_POUR_TOUS à true.
+ MFA_POUR_TOUS = true : la double authentification est obligatoire pour tous les administrateurs, comptables et super-administrateurs
+ (à garder synchronisé avec le réglage « mfa_pour_tous » de la base). Avec false, seuls les comptes de MFA_COMPTES_PILOTE sont obligés.
  Tout compte qui a déjà activé la double authentification doit la saisir, quelle que soit cette liste.
  S'appuie sur core.js : db, $, show, notifier, erreurClaire, msg, showLogin, me
  ===================================================== */
-const MFA_POUR_TOUS = false;
+const MFA_POUR_TOUS = true;
 const MFA_COMPTES_PILOTE = ['novatecbenin@gmail.com', 'novasoftmanagement@gmail.com', 'kfdos83@gmail.com'];
 let mfaResolution = null;
 let mfaMode = '';
