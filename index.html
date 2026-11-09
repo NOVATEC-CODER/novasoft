@@ -88,6 +88,7 @@
  <section id="sec-dossier" class="carte">
  <h2 class="font-bold text-lg">Mon dossier</h2>
  <p id="dossier-info" class="text-sm text-slate-600 mt-2"></p>
+ <div id="dossier-detail" class="mt-4 space-y-3"></div>
  </section>
  <details id="sec-conge" class="carte hidden">
  <summary class="font-bold text-lg cursor-pointer">Demander un congé</summary>
@@ -196,6 +197,19 @@
  <button class="btn w-full" type="submit">Enregistrer l'employé</button>
  <p id="msg-employe" class="text-sm hidden"></p>
  </form>
+ </details>
+ <details id="sec-personnel" class="carte hidden">
+ <summary class="font-bold text-lg cursor-pointer">Dossiers du personnel</summary>
+ <p class="text-sm text-slate-500 mt-2">Choisis un employé pour consulter ou compléter son dossier. Les rubriques affichées dépendent de ton habilitation.</p>
+ <div id="liste-personnel" class="mt-3 divide-y divide-slate-100"></div>
+ <div id="detail-personnel" class="mt-4 hidden"></div>
+ <p id="msg-personnel" class="text-sm hidden mt-3"></p>
+ </details>
+ <details id="sec-habilitations" class="carte hidden">
+ <summary class="font-bold text-lg cursor-pointer">Habilitations</summary>
+ <p class="text-sm text-slate-500 mt-2">Donne à un compte l'accès aux dossiers du personnel (RH, Directeur RH), à la rémunération et à l'évaluation (Direction) ou au module santé (Médecin). Cela s'ajoute à son rôle et ne donne aucun accès aux finances.</p>
+ <div id="liste-habilitations" class="mt-3 divide-y divide-slate-100"></div>
+ <p id="msg-habilitations" class="text-sm hidden mt-3"></p>
  </details>
  <details id="sec-audit-rh" class="carte hidden">
  <summary class="font-bold text-lg cursor-pointer">Historique RH et comptes</summary>
@@ -459,7 +473,7 @@
 <script>
  // Charge toujours la dernière version des fichiers (évite le cache du navigateur)
  const versionFichiers = Date.now();
- ['core.js', 'finances.js', 'exports.js', 'verrou.js', 'mfa.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
+ ['core.js', 'finances.js', 'exports.js', 'verrou.js', 'mfa.js', 'rh.js'].forEach((f) => document.write('<script src="' + f + '?v=' + versionFichiers + '"><\/script>'));
 </script>
 <script>
  // Si l'application ne démarre pas (connexion coupée, script bloqué), on le dit au lieu de tourner sans fin
