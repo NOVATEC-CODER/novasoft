@@ -213,6 +213,8 @@ async function loadApp() {
  show('onglets', accesFin || estSuper);
  if (emp) await loadMesConges();
  if (estAdmin) await loadATraiter();
+ // habilitations et dossier employé enrichi (module rh.js)
+ if (typeof initialiserRH === 'function') await initialiserRH();
  if (accesFin) await chargerFinances();
  if (estSuper) await loadEntreprises();
  // après une actualisation, on retrouve l'onglet où l'on était (si le compte y a droit)
