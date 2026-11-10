@@ -54,18 +54,24 @@ function notifier(texte, ok) {
  minuteurNotif = setTimeout(() => { el.style.opacity = '0'; }, ok ? 4000 : 7000);
 }
 function clearMsg(id) { $(id).className = 'text-sm hidden'; }
-/* ---------- Sections repliables : le téléphone se souvient de celles que tu as ouvertes ou fermées ---------- */
+/* ---------- Sections repliables : tout se referme au démarrage, en changeant d'onglet et en quittant la page ---------- */
+function fermerSections() {
+ document.querySelectorAll('details[open]').forEach((d) => { d.open = false; });
+}
+let dernierChoixFichier = 0;
 function memoriserSections() {
- document.querySelectorAll('details[id]').forEach((d) => {
+ // l'ancien état mémorisé (ouvert / fermé) n'est plus utilisé : on le supprime
  try {
- const etat = localStorage.getItem('ns-ouvert-' + d.id);
- if (etat === '1') d.open = true;
- if (etat === '0') d.open = false;
+ Object.keys(localStorage).filter((k) => k.indexOf('ns-ouvert-') === 0).forEach((k) => localStorage.removeItem(k));
  } catch (e) { /* stockage indisponible : on ignore */ }
- d.addEventListener('toggle', () => {
- try { localStorage.setItem('ns-ouvert-' + d.id, d.open ? '1' : '0'); } catch (e) { /* stockage indisponible : on ignore */ }
+ fermerSections();
+ // choisir un fichier ou prendre une photo quitte brièvement la page : on ne referme pas pendant ce temps
+ document.addEventListener('click', (e) => { if (e.target && e.target.type === 'file') dernierChoixFichier = Date.now(); }, true);
+ // quitter la page (changer d'application, fermer, actualiser) referme tout ; les saisies en cours sont conservées
+ document.addEventListener('visibilitychange', () => {
+ if (document.visibilityState === 'hidden' && Date.now() - dernierChoixFichier > 120000) fermerSections();
  });
- });
+ window.addEventListener('pagehide', fermerSections);
 }
 function show(id, visible) { $(id).classList.toggle('hidden', !visible); }
 /* ---------- Messages d'erreur compréhensibles (le détail technique reste dans la console du navigateur) ---------- */
@@ -116,6 +122,7 @@ const TAB_ON = 'flex-1 rounded-xl fond-flux px-2 py-2 text-[13px] font-semibold 
 const TAB_OFF = 'flex-1 rounded-xl border border-slate-300 bg-white px-2 py-2 text-[13px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-ocean hover:bg-blue-50 hover:text-ocean hover:shadow-sm';
 const acces = { fin: false, ent: false };
 function afficherOnglet(nom) {
+ fermerSections();
  try { sessionStorage.setItem('ns-onglet', nom); } catch (e) { /* stockage indisponible : on ignore */ }
  ['rh', 'fin', 'ent'].forEach((n) => {
  show('onglet-' + n, nom === n);
