@@ -112,7 +112,7 @@ async function appelerCreationCompte(donnees) {
  return { ok: false, message: texte };
 }
 /* ---------- Onglets ---------- */
-const TAB_ON = 'flex-1 rounded-xl bg-gradient-to-r from-ocean to-blue-600 px-2 py-2 text-[13px] font-semibold text-white shadow-md transition';
+const TAB_ON = 'flex-1 rounded-xl fond-flux px-2 py-2 text-[13px] font-semibold text-white shadow-md transition';
 const TAB_OFF = 'flex-1 rounded-xl border border-slate-300 bg-white px-2 py-2 text-[13px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-ocean hover:bg-blue-50 hover:text-ocean hover:shadow-sm';
 const acces = { fin: false, ent: false };
 function afficherOnglet(nom) {
