@@ -24,12 +24,9 @@
  }
 </style>
 <style>
- /* Dégradé bleu-vert qui défile (contour des cartes, barre du haut, onglet actif) */
- @keyframes flux-carte { from { background-position: 0 0, 0% 0; } to { background-position: 0 0, 200% 0; } }
- @keyframes flux-fond { from { background-position: 0% 0; } to { background-position: 200% 0; } }
- .carte { border: 2px solid transparent; background: linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(90deg, #0052CC, #10B981, #0052CC) border-box; background-size: 100% 100%, 200% 100%; animation: flux-carte 7s linear infinite; }
- .fond-flux { background: linear-gradient(90deg, #0052CC, #10B981, #0052CC); background-size: 200% 100%; animation: flux-fond 6s linear infinite; }
- @media (prefers-reduced-motion: reduce) { .carte, .fond-flux { animation: none; } }
+ /* Dégradé bleu-vert STATIQUE (contour des cartes, barre du haut, onglet actif) : aucune animation, pour ménager la batterie */
+ .carte { border: 2px solid transparent; background: linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(90deg, #0052CC, #10B981) border-box; }
+ .fond-flux { background: linear-gradient(90deg, #0052CC, #10B981); }
  /* Titres des sections repliables : pas de flèche, un simple texte bleu « OUVRIR » / « FERMER » au-dessus du titre, à gauche */
  summary { cursor: pointer; transition: color .2s; display: block; list-style: none; }
  summary::-webkit-details-marker { display: none; }
