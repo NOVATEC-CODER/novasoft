@@ -59,6 +59,7 @@ function fermerSections() {
  document.querySelectorAll('details[open]').forEach((d) => { d.open = false; });
 }
 let dernierChoixFichier = 0;
+let impressionDebut = 0;
 function memoriserSections() {
  // l'ancien état mémorisé (ouvert / fermé) n'est plus utilisé : on le supprime
  try {
@@ -68,10 +69,12 @@ function memoriserSections() {
  // choisir un fichier ou prendre une photo quitte brièvement la page : on ne referme pas pendant ce temps
  document.addEventListener('click', (e) => { if (e.target && e.target.type === 'file') dernierChoixFichier = Date.now(); }, true);
  // quitter la page (changer d'application, fermer, actualiser) referme tout ; les saisies en cours sont conservées
+ // pendant une impression ou un enregistrement en PDF, l'écran ne doit surtout pas bouger
+ window.addEventListener('beforeprint', () => { impressionDebut = Date.now(); });
  document.addEventListener('visibilitychange', () => {
- if (document.visibilityState === 'hidden' && Date.now() - dernierChoixFichier > 120000) fermerSections();
+ if (document.visibilityState === 'hidden' && Date.now() - dernierChoixFichier > 120000 && Date.now() - impressionDebut > 120000) fermerSections();
  });
- window.addEventListener('pagehide', fermerSections);
+ window.addEventListener('pagehide', () => { if (Date.now() - impressionDebut > 120000) fermerSections(); });
 }
 function show(id, visible) { $(id).classList.toggle('hidden', !visible); }
 /* ---------- Messages d'erreur compréhensibles (le détail technique reste dans la console du navigateur) ---------- */
@@ -120,7 +123,7 @@ async function appelerCreationCompte(donnees) {
 /* ---------- Onglets ---------- */
 const TAB_ON = 'flex-1 rounded-xl fond-flux px-2 py-2 text-[13px] font-semibold text-white shadow-md transition';
 const TAB_OFF = 'flex-1 rounded-xl border border-slate-300 bg-white px-2 py-2 text-[13px] font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-ocean hover:bg-blue-50 hover:text-ocean hover:shadow-sm';
-const acces = { fin: false, ent: false };
+const acces = { rh: true, fin: false, ent: false };
 function afficherOnglet(nom) {
  fermerSections();
  try { sessionStorage.setItem('ns-onglet', nom); } catch (e) { /* stockage indisponible : on ignore */ }
@@ -128,6 +131,7 @@ function afficherOnglet(nom) {
  show('onglet-' + n, nom === n);
  $('tab-' + n).className = nom === n ? TAB_ON : TAB_OFF;
  });
+ if (!acces.rh) $('tab-rh').classList.add('hidden');
  if (!acces.fin) $('tab-fin').classList.add('hidden');
  if (!acces.ent) $('tab-ent').classList.add('hidden');
 }
@@ -203,31 +207,37 @@ async function loadApp() {
  }
  entrepriseNom = (org.data && org.data.nom) || '';
  $('who').textContent = me.nom;
- $('role').textContent = (ROLES[me.role] || me.role) + (org.data ? ' · ' + org.data.nom : '');
+ $('role').textContent = estSuper ? 'Super-administrateur de la plateforme' : (ROLES[me.role] || me.role) + (org.data ? ' · ' + org.data.nom : '');
  const r = await db.from('employes').select('*').eq('utilisateur_id', me.id).maybeSingle();
  emp = r.data || null;
  renderDossier();
  const estAdmin = me.role === 'admin';
- const accesFin = me.role === 'admin' || me.role === 'comptable';
+ // Le compte super-administrateur n'a que la console de la plateforme (onglet Entreprises) : ni RH, ni finances
+ const accesFin = (me.role === 'admin' || me.role === 'comptable') && !estSuper;
+ acces.rh = !estSuper;
  acces.fin = accesFin;
  acces.ent = estSuper;
- show('sec-conge', !!emp);
- show('sec-mes', !!emp);
- show('sec-traiter', estAdmin);
- show('sec-employe', estAdmin);
- show('sec-profil', estAdmin);
- if (estAdmin && org.data) remplirProfil(org.data);
- show('onglets', accesFin || estSuper);
+ show('sec-conge', !!emp && !estSuper);
+ show('sec-mes', !!emp && !estSuper);
+ show('sec-traiter', estAdmin && !estSuper);
+ show('sec-employe', estAdmin && !estSuper);
+ show('sec-profil', estAdmin && !estSuper);
+ if (estAdmin && !estSuper && org.data) remplirProfil(org.data);
+ show('onglets', accesFin);
+ if (!estSuper) {
  if (emp) await loadMesConges();
  if (estAdmin) await loadATraiter();
  // habilitations et dossier employé enrichi (module rh.js)
  if (typeof initialiserRH === 'function') await initialiserRH();
+ }
  if (accesFin) await chargerFinances();
  if (estSuper) await loadEntreprises();
  // après une actualisation, on retrouve l'onglet où l'on était (si le compte y a droit)
  let ongletInitial = 'rh';
  try { ongletInitial = sessionStorage.getItem('ns-onglet') || 'rh'; } catch (e) { /* stockage indisponible : on ignore */ }
  if (!['rh', 'fin', 'ent'].includes(ongletInitial) || (ongletInitial === 'fin' && !acces.fin) || (ongletInitial === 'ent' && !acces.ent)) ongletInitial = 'rh';
+ if (estSuper) ongletInitial = 'ent';
+ else if (ongletInitial === 'ent') ongletInitial = 'rh';
  afficherOnglet(ongletInitial);
  // verrouillage par code (module verrou.js) : l'écran est couvert avant d'être montré si l'activité est ancienne
  if (typeof demarrerVerrou === 'function') demarrerVerrou();
