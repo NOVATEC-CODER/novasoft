@@ -74,6 +74,16 @@ function memoriserSections() {
  document.addEventListener('visibilitychange', () => {
  if (document.visibilityState === 'hidden' && Date.now() - dernierChoixFichier > 120000 && Date.now() - impressionDebut > 120000) fermerSections();
  });
+ // une seule section ouverte à la fois : en ouvrir une referme les autres sections principales
+ document.addEventListener('toggle', (e) => {
+ const d = e.target;
+ if (!d || d.tagName !== 'DETAILS' || !d.open) return;
+ if (d.parentElement && d.parentElement.closest('details')) return; // sections internes : on ne touche à rien
+ document.querySelectorAll('details[open]').forEach((autre) => {
+ if (autre !== d && !(autre.parentElement && autre.parentElement.closest('details')) && !autre.contains(d)) autre.open = false;
+ });
+ setTimeout(() => { try { d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { /* on ignore */ } }, 60);
+ }, true);
  window.addEventListener('pagehide', () => { if (Date.now() - impressionDebut > 120000) fermerSections(); });
 }
 function show(id, visible) { $(id).classList.toggle('hidden', !visible); }
@@ -99,6 +109,33 @@ function erreurClaire(error, defaut) {
  return generique;
 }
 let me = null; // utilisateur connecté
+let estSuperSession = false; // la personne connectée est super-administrateur de la plateforme
+const MESSAGE_MAINTENANCE = 'Plateforme en maintenance. Nous revenons très vite : réessayez dans environ 1 heure.';
+/* État de la plateforme (lisible même sans être connecté) : en cas d'indisponibilité du service, on ne bloque personne */
+async function etatPlateforme() {
+ try {
+ const r = await db.rpc('etat_plateforme');
+ if (!r.error && r.data) return { active: r.data.active !== false, message: r.data.message || '' };
+ } catch (e) { /* on ignore */ }
+ return { active: true, message: '' };
+}
+async function afficherBandeauMaintenance() {
+ const etat = await etatPlateforme();
+ const el = $('bandeau-maintenance');
+ if (etat.active === false) { el.textContent = etat.message || MESSAGE_MAINTENANCE; el.classList.remove('hidden'); } else { el.classList.add('hidden'); }
+}
+let surveillancePlateformeArmee = false;
+async function surveillerPlateforme() {
+ if (!me || estSuperSession) return;
+ const etat = await etatPlateforme();
+ if (etat.active === false) { try { await db.auth.signOut(); } catch (e) { /* on ignore */ } location.reload(); }
+}
+function armerSurveillancePlateforme() {
+ if (surveillancePlateformeArmee) return;
+ surveillancePlateformeArmee = true;
+ setInterval(surveillerPlateforme, 120000);
+ document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') surveillerPlateforme(); });
+}
 let emp = null; // son dossier employé
 let entrepriseNom = ''; // nom de son entreprise (utilisé sur les impressions)
 /* ---------- Création de compte : toujours par la fonction serveur « creer-compte » ----------*/
@@ -143,6 +180,7 @@ function showLogin() {
  show('vue-chargement', false);
  show('vue-app', false);
  show('vue-login', true);
+ afficherBandeauMaintenance();
 }
 $('form-login').addEventListener('submit', async (e) => {
  e.preventDefault();
@@ -196,6 +234,15 @@ async function loadApp() {
  }
  const sa = await db.rpc('est_super_admin');
  const estSuper = sa.data === true;
+ estSuperSession = estSuper;
+ // maintenance de la plateforme : seuls les super-administrateurs peuvent entrer
+ const etat = await etatPlateforme();
+ if (!estSuper && etat.active === false) {
+ await db.auth.signOut();
+ showLogin();
+ msg('msg-login', etat.message || MESSAGE_MAINTENANCE, false);
+ return;
+ }
  // double authentification (module mfa.js) : exigée avant de charger la moindre donnée
  if (typeof verifierMfa === 'function' && !(await verifierMfa(estSuper))) return;
  const org = await db.from('organisations').select('nom,sigle,ifu,rccm,adresse,telephone,email,actif').eq('id', me.organisation_id).maybeSingle();
@@ -231,7 +278,8 @@ async function loadApp() {
  if (typeof initialiserRH === 'function') await initialiserRH();
  }
  if (accesFin) await chargerFinances();
- if (estSuper) await loadEntreprises();
+ if (estSuper) { await loadEntreprises(); if (typeof chargerPlateforme === 'function') await chargerPlateforme(); }
+ armerSurveillancePlateforme();
  // après une actualisation, on retrouve l'onglet où l'on était (si le compte y a droit)
  let ongletInitial = 'rh';
  try { ongletInitial = sessionStorage.getItem('ns-onglet') || 'rh'; } catch (e) { /* stockage indisponible : on ignore */ }
@@ -554,18 +602,18 @@ async function definirLien(orgId, mereId, type, pct) {
  return erreurClaire(r.error, 'Le rattachement n\'a pas pu être enregistré.');
 }
 async function loadEntreprises() {
- const { data, error } = await db.from('organisations').select('id,nom,sigle,ifu,rccm,adresse,telephone,email,actif,created_at').order('created_at', {
+ const { data, error } = await db.from('organisations').select('id,nom,sigle,ifu,rccm,adresse,telephone,email,actif,created_at,interne,proprietaire').order('created_at', {
 ascending: true });
  const box = $('liste-ent');
  if (error) { box.innerHTML = '<p class="py-3 text-sm text-rose-600">' + esc(erreurClaire(error, 'Impossible de charger les entreprises.')) + '</p>'; return; }
- entreprises = data;
+ entreprises = data.filter((o) => !o.interne);
  liensGroupe = {};
  const liens = await db.from('liens_organisations').select('organisation_id,mere_id,type_lien,pourcentage');
  if (liens.error) console.warn('[NovaSoft] liens de groupe indisponibles', liens.error.message);
  else (liens.data || []).forEach((l) => { liensGroupe[l.organisation_id] = l; });
  remplirChoixEntreprises();
- if (!data.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune entreprise.</p>'; return; }
- box.innerHTML = data.map((o) => {
+ if (!entreprises.length) { box.innerHTML = '<p class="py-3 text-sm text-slate-500">Aucune entreprise.</p>'; return; }
+ box.innerHTML = entreprises.map((o) => {
  const lien = libelleLien(o.id);
  return '<div class="py-3 px-2 -mx-2 rounded-xl transition hover:bg-blue-50/60 flex items-start justify-between gap-3">'
  + '<div class="min-w-0"><p class="text-sm font-semibold">' + esc(o.nom) + (o.sigle ? ' ('
@@ -574,18 +622,21 @@ ascending: true });
  + '<p class="text-xs text-slate-500">Créée le ' + new Date(o.created_at).toLocaleDateString('fr-FR') + '</p></div>'
  + '<div class="shrink-0 text-right">'
  + '<span class="px-2.5 py-1 rounded-full text-xs font-semibold ' + (o.actif ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700') + '">' + (o.actif ? 'Active' : 'Suspendue') + '</span>'
- + (me && o.id === me.organisation_id
- ? '<span class="block mt-1 text-xs text-slate-400">Ton entreprise</span>'
- : '<button class="block ml-auto mt-1 text-xs font-semibold ' + (o.actif ? 'text-rose-600' : 'text-ocean') + '" data-org="' + esc(o.id) + '" data-actif="' + (o.actif ? '0' : '1') + '">' + (o.actif ? 'Suspendre' : 'Réactiver') + '</button>')
+ + (o.proprietaire ? '<span class="block mt-1 text-xs font-bold text-lumina-dark">Propriétaire</span>' : '')
+ + ('<button class="block ml-auto mt-1 text-xs font-semibold ' + (o.actif ? 'text-rose-600' : 'text-ocean') + '" data-org="' + esc(o.id) + '" data-actif="' + (o.actif ? '0' : '1') + '">' + (o.actif ? 'Suspendre' : 'Réactiver') + '</button>')
  + '</div></div>';
  }).join('');
 }
 $('liste-ent').addEventListener('click', async (e) => {
  const btn = e.target.closest('button[data-org]');
  if (!btn) return;
- if (me && btn.dataset.org === me.organisation_id) { msg('msg-liste-ent', 'Tu ne peux pas suspendre l\'entreprise à laquelle ton compte est rattaché.', false); return; }
  const activer = btn.dataset.actif === '1';
- const question = activer ? 'Réactiver cette entreprise ?' : 'Suspendre cette entreprise ? Ses utilisateurs ne pourront plus accéder à leurs données.';
+ const cible = entreprises.find((x) => x.id === btn.dataset.org) || {};
+ const question = activer
+ ? 'Réactiver cette entreprise ?'
+ : (cible.proprietaire
+ ? 'Attention : cette entreprise est la société PROPRIÉTAIRE du logiciel. La suspendre bloque aussi tous ses utilisateurs (gestion interne). Tu pourras toujours la réactiver depuis cette console. Suspendre quand même ?'
+ : 'Suspendre cette entreprise ? Ses utilisateurs ne pourront plus accéder à leurs données.');
  if (!window.confirm(question)) return;
  clearMsg('msg-liste-ent');
  const { error } = await db.rpc('definir_actif_organisation', { p_id: btn.dataset.org, p_actif: activer });
