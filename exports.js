@@ -110,33 +110,6 @@ function imprimerRapport(r) {
  }
  return true;
 }
-/* Autre méthode d'impression : le rapport s'ouvre dans une page à part, avec un bouton « Imprimer / Enregistrer en PDF ».
- À utiliser si la fenêtre d'impression du téléphone reste vide ou indique « Cette imprimante n'est pas disponible ». */
-const CSS_PAGE = 'body{font-family:Arial,Helvetica,sans-serif;color:#0f172a;font-size:13px;margin:0;padding:14px;background:#fff}'
- + '.barre{position:sticky;top:0;background:#fff;padding:8px 0;margin-bottom:10px;border-bottom:1px solid #e2e8f0}'
- + '.barre button{border:0;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:bold;color:#fff;background:#0052CC;width:100%}'
- + '.top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0052CC;padding-bottom:8px}'
- + '.logo{height:34px;width:auto;display:block}.ent{text-align:right;font-size:11px;color:#475569}'
- + 'h1{font-size:18px;font-weight:bold;margin:14px 0 2px;color:#0052CC}.sous{margin:0 0 10px;color:#475569}'
- + '.defil{overflow-x:auto}table{width:100%;border-collapse:collapse}'
- + 'th{background:#0052CC;color:#fff;text-align:left;padding:6px;font-size:11px}'
- + 'td{border-bottom:1px solid #e2e8f0;padding:5px 6px;vertical-align:top}'
- + 'th.d,td.d{text-align:right;white-space:nowrap}tbody tr:nth-child(even) td{background:#f8fafc}'
- + 'tr.tot td{font-weight:bold;background:#eff6ff;border-bottom:1px solid #bfdbfe}'
- + '.note{margin-top:10px;color:#b45309;font-size:11px}.pied{margin-top:18px;text-align:center;color:#94a3b8;font-size:10px}'
- + '@page{size:A4;margin:14mm}@media print{.barre{display:none}body{padding:0}}';
-function ouvrirRapportEnPage(r) {
- const titre = 'NovaSoft - ' + r.titre + (r.sousTitre ? ' - ' + r.sousTitre : '');
- const page = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
- + '<title>' + esc(titre) + '</title><style>' + CSS_PAGE + '</style></head><body>'
- + '<div class="barre"><button type="button" onclick="window.print()">Imprimer / Enregistrer en PDF</button></div>'
- + '<div class="defil">' + corpsRapport(r) + '</div></body></html>';
- const url = URL.createObjectURL(new Blob([page], { type: 'text/html;charset=utf-8' }));
- const fenetre = window.open(url, '_blank');
- if (!fenetre) { window.alert('La page ne s\'est pas ouverte. Autorise les fenêtres pour ce site, puis réessaie.'); URL.revokeObjectURL(url); return false; }
- setTimeout(() => URL.revokeObjectURL(url), 120000);
- return true;
-}
 /* ---------- Excel : fichier CSV (séparateur point-virgule, accents conservés), ouvert directement par Excel ---------- */
 function csvCellule(v) {
  if (v === null || v === undefined) return '';
@@ -195,32 +168,38 @@ return; }
 function ouvrirMenuExport(r) {
  const ancien = $('menu-export');
  if (ancien) ancien.remove();
- if (!r.lignes.length) { window.alert('Rien à imprimer ni à exporter pour cette période.');
-return; }
+ if (!r.lignes.length) { window.alert('Rien à imprimer ni à exporter pour cette période.'); return; }
  const fond = document.createElement('div');
  fond.id = 'menu-export';
  fond.className = 'fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-4';
+ const partage = typeof partageDisponible === 'function' && partageDisponible();
  fond.innerHTML = '<div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl space-y-3">'
  + '<p class="font-bold text-lg">' + esc(r.titre) + '</p>'
  + '<p class="text-sm text-slate-500">' + esc(r.sousTitre || '') + (r.sousTitre ? ' · ' : '') + r.lignes.length + ' ligne(s)</p>'
- + '<button type="button" data-fmt="pdf" class="w-full rounded-xl bg-gradient-to-r from-ocean to-lumina px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:shadow-md">Imprimer / Enregistrer en PDF</button>'
- + '<button type="button" data-fmt="csv" class="btn w-full">Télécharger pour Excel</button>'
- + '<button type="button" data-fmt="page" class="btn-clair w-full">Ouvrir en page (si l\'impression ne s\'affiche pas)</button>'
+ + '<button type="button" data-fmt="pdf" class="w-full rounded-xl bg-gradient-to-r from-ocean to-lumina px-4 py-2.5 text-sm font-semibold text-white shadow-sm">Télécharger le PDF</button>'
+ + (partage ? '<button type="button" data-fmt="partage" class="btn-clair w-full">Partager le PDF (e-mail, WhatsApp…)</button>' : '')
+ + '<button type="button" data-fmt="csv" class="btn-clair w-full">Télécharger pour Excel</button>'
+ + '<button type="button" data-fmt="impression" class="w-full py-1 text-xs font-semibold text-ocean">Imprimer avec l\'imprimante du téléphone</button>'
  + '<button type="button" data-fmt="annuler" class="btn-clair w-full">Annuler</button>'
- + '<p class="text-xs text-slate-400">Dans la fenêtre d\'impression, choisis « Enregistrer au format PDF » pour garder une copie.</p>'
  + '</div>';
- fond.addEventListener('click', (e) => {
+ fond.addEventListener('click', async (e) => {
  if (e.target === fond) { fond.remove(); return; }
  const btn = e.target.closest('button[data-fmt]');
  if (!btn) return;
  const fmt = btn.dataset.fmt;
  if (fmt === 'annuler') { fond.remove(); return; }
  let ok = true;
- if (fmt === 'pdf') ok = imprimerRapport(r);
- else if (fmt === 'page') ok = ouvrirRapportEnPage(r);
+ if (fmt === 'partage') {
+ const envoye = partagerPDF(r); // doit partir tout de suite : le téléphone exige un geste de ta part
+ fond.remove();
+ if (await envoye) journaliserExport(r, 'pdf');
+ return;
+ }
+ if (fmt === 'pdf') ok = telechargerPDF(r);
+ else if (fmt === 'impression') ok = imprimerRapport(r);
  else telechargerCSV(r);
  fond.remove();
- if (ok) journaliserExport(r, fmt === 'page' ? 'pdf' : fmt);
+ if (ok) journaliserExport(r, fmt === 'csv' ? 'csv' : 'pdf');
  });
  document.body.appendChild(fond);
 }
