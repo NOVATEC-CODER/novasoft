@@ -332,7 +332,7 @@ $('detail-personnel').addEventListener('submit', async (e) => {
 /* ---------- Habilitations (administrateur) ---------- */
 async function chargerHabilitationsEquipe() {
  const [u, h] = await Promise.all([
- db.from('utilisateurs').select('id,nom,email,role').eq('organisation_id', me.organisation_id).order('nom', { ascending: true }),
+ db.rpc('equipe_organisation'),
  db.from('habilitations').select('utilisateur_id,habilitation')
  ]);
  const box = $('liste-habilitations');
