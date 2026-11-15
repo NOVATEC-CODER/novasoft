@@ -1,19 +1,36 @@
 /* =====================================================
  NovaSoft - console de la plateforme (super-administrateur) : interrupteur central de maintenance
- Vert = la plateforme est accessible. Rouge = maintenance : plus aucune entreprise cliente ne peut se connecter
+ Interrupteur ON (vert) = la plateforme est accessible. OFF (rouge) = maintenance : plus aucune entreprise cliente ne peut se connecter
  (la règle est appliquée par la base de données ; seuls les super-administrateurs gardent l'accès).
  S'appuie sur core.js : db, $, msg, clearMsg, erreurClaire, etatPlateforme, MESSAGE_MAINTENANCE
  ===================================================== */
 let plateformeActive = true;
 function majBoutonPlateforme() {
  const b = $('btn-plateforme');
- const base = 'mt-4 w-full rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm transition ';
+ const texte = $('plateforme-texte');
+ const bouton = $('plateforme-bouton');
+ const titre = $('etat-plateforme-titre');
+ const detail = $('etat-plateforme-detail');
+ const base = 'relative h-12 w-28 shrink-0 rounded-full shadow-inner transition-colors duration-300 ';
+ b.setAttribute('aria-checked', plateformeActive ? 'true' : 'false');
  if (plateformeActive) {
- b.className = base + 'bg-emerald-600';
- b.textContent = '● Plateforme accessible — appuie pour la mettre en maintenance';
+ b.className = base + 'bg-emerald-500';
+ texte.textContent = 'ON';
+ texte.style.left = '16px';
+ texte.style.right = '';
+ bouton.style.transform = 'translateX(64px)';
+ titre.textContent = 'Plateforme accessible';
+ titre.className = 'text-base font-extrabold text-emerald-600';
+ detail.textContent = 'Toutes les entreprises clientes peuvent se connecter.';
  } else {
  b.className = base + 'bg-rose-600';
- b.textContent = '● Maintenance activée — appuie pour rouvrir la plateforme';
+ texte.textContent = 'OFF';
+ texte.style.left = '';
+ texte.style.right = '14px';
+ bouton.style.transform = 'translateX(0)';
+ titre.textContent = 'Maintenance activée';
+ titre.className = 'text-base font-extrabold text-rose-600';
+ detail.textContent = 'Seuls les super-administrateurs peuvent se connecter.';
  }
 }
 async function chargerPlateforme() {
