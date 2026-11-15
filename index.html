@@ -27,12 +27,12 @@
  /* Dégradé bleu-vert STATIQUE (contour des cartes, barre du haut, onglet actif) : aucune animation, pour ménager la batterie */
  .carte { border: 2px solid transparent; background: linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(90deg, #0052CC, #10B981) border-box; }
  .fond-flux { background: linear-gradient(90deg, #0052CC, #10B981); }
- /* Titres des sections repliables : pas de flèche, un simple texte vert « ouvrir » / « fermer » au-dessus du titre, à gauche */
+ /* Titres des sections repliables : pas de flèche, un simple texte vert « Ouvrir » / « Fermer » au-dessus du titre, à gauche */
  summary { cursor: pointer; transition: color .2s; display: block; list-style: none; }
  summary::-webkit-details-marker { display: none; }
  summary::marker { content: ''; }
- summary::before { content: 'ouvrir'; display: block; margin-bottom: .2rem; font-size: .8rem; line-height: 1.1; font-weight: 700; letter-spacing: .02em; color: #10B981; }
- details[open] > summary::before { content: 'fermer'; }
+ summary::before { content: 'Ouvrir'; display: block; margin-bottom: .2rem; font-size: .8rem; line-height: 1.1; font-weight: 700; letter-spacing: .02em; color: #10B981; }
+ details[open] > summary::before { content: 'Fermer'; }
  summary:hover { color: #0052CC; }
  select, input, textarea { transition: border-color .2s, box-shadow .2s; }
 </style>
@@ -230,7 +230,16 @@
  <section id="sec-maintenance" class="carte">
  <h2 class="font-bold text-lg">Accès à la plateforme</h2>
  <p class="text-sm text-slate-500 mt-2">Bouton central : vert, la plateforme est accessible ; rouge, plus aucune entreprise cliente ne peut se connecter. Toi seul peux entrer à tout moment.</p>
- <button id="btn-plateforme" type="button" class="mt-4 w-full rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm bg-slate-400">Chargement…</button>
+ <div class="mt-5 flex items-center justify-between gap-4">
+ <div class="min-w-0">
+ <p id="etat-plateforme-titre" class="text-base font-extrabold text-slate-500">Chargement…</p>
+ <p id="etat-plateforme-detail" class="text-xs text-slate-500"></p>
+ </div>
+ <button id="btn-plateforme" type="button" role="switch" aria-checked="true" aria-label="Accès à la plateforme" class="relative h-12 w-28 shrink-0 rounded-full bg-slate-300 shadow-inner transition-colors duration-300">
+ <span id="plateforme-texte" class="absolute inset-y-0 flex items-center text-xs font-extrabold tracking-wide text-white" style="left:14px">…</span>
+ <span id="plateforme-bouton" class="absolute left-1 top-1 h-10 w-10 rounded-full bg-white shadow-md transition-transform duration-300"></span>
+ </button>
+ </div>
  <label class="etiq mt-4" for="m-message">Message affiché aux utilisateurs en cas de maintenance</label>
  <textarea id="m-message" rows="2" maxlength="300" class="champ"></textarea>
  <p id="msg-plateforme" class="text-sm hidden mt-3"></p>
