@@ -26,6 +26,7 @@ const STATUTS = {
   annule: ['Annulé', 'bg-slate-100 text-slate-600']
 };
 const ROLES = { admin: 'Admin', comptable: 'Comptable', employe: 'Employé' };
+const minuteursMsg = {};
 function msg(id, texte, ok) {
   const el = $(id);
   el.textContent = texte;
@@ -34,7 +35,12 @@ function msg(id, texte, ok) {
   const section = el.closest('details');
   if (section && !section.open) section.open = true;
   // la confirmation (ou l'erreur) s'affiche aussi en bas de l'écran, où que tu sois dans la page
-  if (id !== 'msg-login') notifier(texte, ok);
+  if (id !== 'msg-login') {
+    notifier(texte, ok);
+    // le message en ligne s'efface tout seul (sauf s'il a été remplacé entre-temps par un autre)
+    clearTimeout(minuteursMsg[id]);
+    minuteursMsg[id] = setTimeout(() => { if (el.textContent === texte) clearMsg(id); }, ok ? 8000 : 15000);
+  }
 }
 /* ---------- Notification visible en bas de l'écran ---------- */
 let minuteurNotif = null;
@@ -55,8 +61,15 @@ function notifier(texte, ok) {
 }
 function clearMsg(id) { $(id).className = 'text-sm hidden'; }
 /* ---------- Sections repliables : tout se referme au démarrage, en changeant d'onglet et en quittant la page ---------- */
+/* Efface les messages affichés dans les sections (ceux de l'écran de connexion, du verrou et de la double authentification ont leur propre gestion) */
+function effacerMessages(racine) {
+  (racine || document).querySelectorAll('[id^="msg-"]').forEach((el) => {
+    if (el.id !== 'msg-login' && el.id !== 'msg-verrou' && el.id !== 'msg-mfa') el.className = 'text-sm hidden';
+  });
+}
 function fermerSections() {
   document.querySelectorAll('details[open]').forEach((d) => { d.open = false; });
+  effacerMessages();
 }
 let dernierChoixFichier = 0;
 let impressionDebut = 0;
@@ -77,6 +90,7 @@ function memoriserSections() {
   // une seule section ouverte à la fois : en ouvrir une referme les autres sections principales
   document.addEventListener('toggle', (e) => {
     const d = e.target;
+    if (d && d.tagName === 'DETAILS' && !d.open) { effacerMessages(d); return; }
     if (!d || d.tagName !== 'DETAILS' || !d.open) return;
     if (d.parentElement && d.parentElement.closest('details')) return; // sections internes : on ne touche à rien
     document.querySelectorAll('details[open]').forEach((autre) => {
