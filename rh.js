@@ -76,7 +76,7 @@ function bilanPaiements(paiements, aujourdhui) {
   const recents = valables.slice().sort((a, b) => (a.periode < b.periode ? 1 : -1)).slice(0, 6);
   const retards = recents.filter((p) => statutPaiement(p, aujourdhui)[0].indexOf('retard') !== -1).length;
   if (!retards) return ['Salaires payés à temps', 'vert'];
-  return [retards + ' retard' + (retards > 1 ? 's' : '') + ' de paiement sur les ' + recents.length + ' derniers mois', 'rouge'];
+  return [retards + ' retard' + (retards > 1 ? 's' : '') + ' de paiement sur ' + (recents.length > 1 ? 'les ' + recents.length + ' derniers mois' : 'le dernier mois'), 'rouge'];
 }
 function moisLibelle(periode) {
   return new Date(periode + 'T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
@@ -149,7 +149,8 @@ function listePaiementsHtml(paiements) {
     const [lib, coul] = statutPaiement(p);
     return '<div class="flex items-center justify-between gap-3 py-2 text-sm"><div><p class="font-semibold">' + esc(moisLibelle(p.periode)) + '</p>'
       + '<p class="text-xs text-slate-500">' + fcfa(p.montant) + ' · avant le ' + fmtDate(p.date_prevue) + (p.date_paiement ? ' · payé le ' + fmtDate(p.date_paiement) : '') + '</p>'
-      + (p.statut === 'annule' && p.motif_annulation ? '<p class="text-xs text-slate-500">Motif de l\'annulation : ' + esc(p.motif_annulation) + '</p>' : '') + '</div>'
+      + (p.reference ? '<p class="text-xs text-slate-500">Réf. ' + esc(p.reference) + '</p>' : '')
+      + (p.statut === 'annule' && p.motif_annulation ? '<p class="text-xs text-slate-500">Motif de l\'annulation : ' + esc(p.motif_annulation) + (p.reference_annulation ? ' · annulation ' + esc(p.reference_annulation) : '') + '</p>' : '') + '</div>'
       + badge(lib, coul) + '</div>';
   }).join('');
 }
@@ -376,8 +377,8 @@ function creerSectionPaie() {
   sec.id = 'sec-paie';
   sec.className = 'carte hidden';
   sec.innerHTML = '<summary class="font-bold text-lg cursor-pointer">Paie des salaires</summary>'
-    + '<p class="text-sm text-slate-500 mt-2">Le RH prépare, la Direction approuve, le comptable paie. Les paiements encore à traiter restent toujours affichés ; les autres sont ceux du mois choisi.</p>'
-    + '<div class="mt-3"><label class="etiq" for="paie-mois">Mois</label><input id="paie-mois" type="month" class="champ"></div>'
+    + '<p class="text-sm text-slate-500 mt-2">Le RH prépare, la Direction approuve, le comptable paie. Les paiements encore à traiter restent toujours affichés ; les autres sont ceux du mois affiché. Le mois d\'un salaire est fixé à sa préparation.</p>'
+    + '<div class="mt-3"><label class="etiq" for="paie-mois">Afficher le mois</label><input id="paie-mois" type="month" class="champ"></div>'
     + '<div id="liste-paie" class="mt-3"></div>'
     + '<p id="msg-paie" class="text-sm hidden mt-3"></p>';
   const apres = $('sec-personnel');
@@ -398,7 +399,7 @@ async function chargerPaie() {
   const mois = $('paie-mois').value || iso(new Date()).slice(0, 7);
   const [r, c] = await Promise.all([
     db.from('paiements_salaire')
-      .select('id,employe_id,periode,montant,date_prevue,date_paiement,mode_reglement,statut,motif_annulation,prepare_par,approuve_par,employes(prenom,nom,matricule)')
+      .select('id,employe_id,periode,montant,date_prevue,date_paiement,mode_reglement,statut,motif_annulation,prepare_par,approuve_par,reference,reference_annulation,employes(prenom,nom,matricule)')
       .or('periode.eq.' + mois + '-01,statut.in.(a_payer,approuve)')
       .order('periode', { ascending: false })
       .limit(200),
@@ -456,7 +457,9 @@ function lignePaie(p) {
     + '<p class="text-sm font-semibold">' + esc(nomEmploye(p)) + (e.matricule ? ' <span class="text-xs font-normal text-slate-500">· ' + esc(e.matricule) + '</span>' : '') + '</p>'
     + '<p class="text-xs text-slate-500">Salaire de ' + esc(moisLibelle(p.periode)) + ' · ' + fcfa(p.montant) + '</p>'
     + '<p class="text-xs text-slate-500">À payer avant le ' + fmtDate(p.date_prevue) + (p.date_paiement ? ' · payé le ' + fmtDate(p.date_paiement) : '') + '</p>'
+    + (p.reference ? '<p class="text-xs text-slate-500">Réf. <span class="font-semibold text-slate-700">' + esc(p.reference) + '</span></p>' : '')
     + (p.statut === 'annule' && p.motif_annulation ? '<p class="mt-0.5 text-xs text-slate-700"><span class="font-semibold">Motif de l\'annulation :</span> ' + esc(p.motif_annulation) + '</p>' : '')
+    + (p.reference_annulation ? '<p class="text-xs text-slate-500">Annulation : <span class="font-semibold text-slate-700">' + esc(p.reference_annulation) + '</span></p>' : '')
     + '</div>' + badge(lib, coul) + '</div>'
     + actionsPaieHtml(p)
     + '<div id="pan-' + id + '" class="hidden mt-2 space-y-2 rounded-xl bg-slate-50 p-3"></div></div>';
@@ -477,7 +480,8 @@ function ouvrirPanneauPaie(p, act) {
   pan.dataset.act = act;
   if (act === 'payer') {
     if (!caissesPaie.length) { msg('msg-paie', 'Aucune caisse active. Ajoute ou réactive une caisse dans l\'onglet Finances.', false); return; }
-    pan.innerHTML = '<div><label class="etiq" for="pp-caisse-' + id + '">Caisse qui paie</label><select id="pp-caisse-' + id + '" class="champ" data-paie-caisse="' + id + '">'
+    pan.innerHTML = '<p class="text-xs font-semibold text-slate-600">Salaire de ' + esc(moisLibelle(p.periode)) + ' · ' + fcfa(p.montant) + '</p>'
+      + '<div><label class="etiq" for="pp-caisse-' + id + '">Caisse qui paie</label><select id="pp-caisse-' + id + '" class="champ" data-paie-caisse="' + id + '">'
       + caissesPaie.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.nom) + '</option>').join('') + '</select></div>'
       + '<div class="grid grid-cols-2 gap-3"><div><label class="etiq" for="pp-date-' + id + '">Payé le</label><input id="pp-date-' + id + '" type="date" class="champ" value="' + auj + '" min="' + esc(p.periode) + '" max="' + auj + '"></div>'
       + '<div><label class="etiq" for="pp-mode-' + id + '">Règlement</label><select id="pp-mode-' + id + '" class="champ">'
