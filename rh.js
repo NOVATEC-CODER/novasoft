@@ -255,6 +255,7 @@ function lireChamps(prefixe, champs, obligatoires) {
 async function ouvrirDossierPersonnel(id, defiler) {
   const e = personnel.find((x) => x.id === id);
   if (!e) return;
+  clearMsg('msg-personnel');
   employeOuvert = id;
   const [idt, rem, pai] = await Promise.all([
     db.from('employes_identite').select('*').eq('employe_id', id).maybeSingle(),
@@ -290,6 +291,7 @@ async function ouvrirDossierPersonnel(id, defiler) {
   if (defiler !== false) zone.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function fermerDossierPersonnel() {
+  clearMsg('msg-personnel');
   employeOuvert = null;
   donneesOuvertes = null;
   $('detail-personnel').innerHTML = '';
