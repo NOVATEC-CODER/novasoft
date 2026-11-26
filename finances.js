@@ -1,6 +1,7 @@
 /* =====================================================
    NovaSoft - module Finances (caisses, opérations, justificatifs, historique)
    S'appuie sur core.js : db, $, esc, fmtDate, fcfa, iso, msg, clearMsg, show, me
+   Chaque opération porte un numéro de référence (OP-AAAA-000000) attribué par la base de données.
    ===================================================== */
 
 const MODES = { especes: 'Espèces', virement: 'Virement', cheque: 'Chèque', mobile_money: 'Mobile Money', carte: 'Carte', autre: 'Autre' };
@@ -190,7 +191,7 @@ function initFinances() {
 async function chargerFinances() {
   await chargerCaisses();
   const { data, error } = await db.from('finances')
-    .select('id,date,type,montant,categorie,description,justificatif_url,caisse_id,mode_reglement')
+    .select('id,reference,date,type,montant,categorie,description,justificatif_url,caisse_id,mode_reglement')
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(1000);
@@ -230,7 +231,7 @@ function decrireAudit(a, noms) {
   let detail = '';
   switch (a.table_nom) {
     case 'finances':
-      detail = (l.categorie || '') + ' · ' + fcfa(l.montant);
+      detail = (l.reference ? l.reference + ' · ' : '') + (l.categorie || '') + ' · ' + fcfa(l.montant);
       if (a.action === 'UPDATE' && Number(avant.montant) !== Number(apres.montant)) detail += ' (avant : ' + fcfa(avant.montant) + ')';
       break;
     case 'caisses':
@@ -378,7 +379,9 @@ function rendreOperations() {
   box.innerHTML = duMois.map((o) => {
     const entree = o.type === 'recette';
     const caisse = caisses.find((c) => c.id === o.caisse_id);
-    const details = [fmtDate(o.date)];
+    const details = [];
+    if (o.reference) details.push('<span class="font-semibold text-slate-700">' + esc(o.reference) + '</span>');
+    details.push(fmtDate(o.date));
     if (caisse) details.push(esc(caisse.nom));
     if (o.mode_reglement) details.push(esc(MODES[o.mode_reglement] || o.mode_reglement));
     if (o.description) details.push(esc(o.description));
@@ -497,7 +500,7 @@ function modifierOperation(id) {
   $('f-cat').value = o.categorie;
   $('f-desc').value = o.description || '';
   $('f-fichier').value = '';
-  $('titre-op').textContent = 'Modifier l\'opération';
+  $('titre-op').textContent = 'Modifier l\'opération' + (o.reference ? ' ' + o.reference : '');
   $('btn-fin').textContent = 'Mettre à jour l\'opération';
   show('btn-op-annuler', true);
   show('aide-justif', !!o.justificatif_url);
@@ -577,14 +580,14 @@ async function enregistrerOperation(e) {
     }
 
     champs.justificatif_url = chemin;
-    const { error } = await db.from('finances').insert(champs);
+    const { data: creee, error } = await db.from('finances').insert(champs).select('reference').single();
     if (error) {
       if (chemin) await db.storage.from('justificatifs').remove([chemin]);
       msg('msg-fin', erreurClaire(error, 'L\'opération n\'a pas pu être enregistrée.'), false);
       return;
     }
     const caisseChoisie = $('f-caisse').value;
-    msg('msg-fin', 'Opération enregistrée.', true);
+    msg('msg-fin', 'Opération enregistrée' + (creee && creee.reference ? ' : ' + creee.reference : '') + '.', true);
     $('form-fin').reset();
     $('f-date').value = iso(new Date());
     await chargerFinances();
