@@ -28,6 +28,8 @@ function slug(t) {
 }
 function cellule(col, v) {
   if (v === '' || v === null || v === undefined) return '';
+  // un libellé (par exemple « Total recettes ») placé dans une colonne de montants reste du texte
+  if (col.type === 'montant' && typeof v === 'string' && isNaN(Number(v))) return v;
   return col.type === 'montant' ? nombreFr.format(Number(v)) : String(v);
 }
 function editeur() {
